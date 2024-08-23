@@ -1,5 +1,8 @@
 defmodule Ultraviolet.Color.HSL do
-  defstruct h: 0, s: 0, l: 0, a: 1.0
+  @moduledoc """
+  Functions for working in the HSL color space
+  """
+  defstruct h: 0, s: 0.0, l: 0.0, a: 1.0
 
   alias Ultraviolet.Color
   alias __MODULE__
@@ -80,7 +83,7 @@ defmodule Ultraviolet.Color.HSL do
     }
   end
 
-  defp saturation(_d, f) when f == 0, do: 0
+  defp saturation(_d, f) when f == 0, do: 0.0
   defp saturation(d, f), do: d / f
 
   defp hue(_, _, d) when d == 0, do: 0

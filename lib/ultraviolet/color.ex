@@ -17,7 +17,7 @@ defmodule Ultraviolet.Color do
   """
   import Bitwise, only: [bsr: 2, band: 2]
 
-  alias Ultraviolet.Color.HSL
+  alias Ultraviolet.Color.{HSL, HSV}
   alias __MODULE__
 
   @me __MODULE__
@@ -88,7 +88,14 @@ defmodule Ultraviolet.Color do
 
       iex>Ultraviolet.Color.new(330, 1, 0.6, :hsl)
       {:ok, %Ultraviolet.Color{r: 255, g: 51, b: 153, a: 1.0}}
-      iex>Ultraviolet.Color.new(330, 0.0, 1, :hsl)
+      iex>Ultraviolet.Color.new(330, 0, 1, :hsl)
+      {:ok, %Ultraviolet.Color{r: 255, g: 255, b: 255, a: 1.0}}
+
+  #### HSV
+
+      iex>Ultraviolet.Color.new(330, 0.8, 1, :hsv)
+      {:ok, %Ultraviolet.Color{r: 255, g: 51, b: 153, a: 1.0}}
+      iex>Ultraviolet.Color.new(330, 0, 1, :hsv)
       {:ok, %Ultraviolet.Color{r: 255, g: 255, b: 255, a: 1.0}}
 
   """
@@ -170,6 +177,13 @@ defmodule Ultraviolet.Color do
     end
   end
 
+  def new(h, s, v, :hsv) do
+    case HSV.new(h, s, v) do
+      {:ok, hsv} -> HSV.to_rgb(hsv)
+      error -> error
+    end
+  end
+
   def new(r, g, b, a) when is_normalized(a) and is_byte(r) and is_byte(g) and is_byte(b) do
     {:ok, struct(@me, r: r, g: g, b: b, a: a)}
   end
@@ -192,12 +206,23 @@ defmodule Ultraviolet.Color do
 
   ## Examples
 
+  ### HSL
+
       iex>{:ok, color} = Ultraviolet.Color.new("#ff3399")
-      {:ok, %Ultraviolet.Color{r: 255, g: 51, b: 153, a: 1.0}}
+      {:ok, %Ultraviolet.Color{r: 255, g: 51, b: 153}}
       iex> Ultraviolet.Color.into(color, :hsl)
-      {:ok, %Ultraviolet.Color.HSL{h: 330, s: 1.0, l: 0.6, a: 1.0}}
+      {:ok, %Ultraviolet.Color.HSL{h: 330, s: 1.0, l: 0.6}}
+
+  ### HSV
+
+      iex>{:ok, color} = Ultraviolet.Color.new("#ff3399")
+      {:ok, %Ultraviolet.Color{r: 255, g: 51, b: 153}}
+      iex> Ultraviolet.Color.into(color, :hsv)
+      {:ok, %Ultraviolet.Color.HSV{h: 330, s: 0.8, v: 1.0}}
+
   """
   def into(%Color{} = color, :hsl), do: HSL.from_rgb(color)
+  def into(%Color{} = color, :hsv), do: HSV.from_rgb(color)
 
   def hex(%Color{r: r, g: g, b: b, a: 1.0}) do
     [r, g, b]
