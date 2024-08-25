@@ -109,7 +109,7 @@ defmodule Ultraviolet.Color.Lab do
   end
 
   @doc """
-  Converts from CIE Lab to an RGB Color object.
+  Converts from CIE Lab to an RGB Color struct
   
   ## Options
 
@@ -155,7 +155,7 @@ defmodule Ultraviolet.Color.Lab do
   end
 
   defp maybe_round(channel, 0), do: round(channel)
-  defp maybe_round(channel, digits) when is_integer(digits) do
+  defp maybe_round(channel, digits) when is_integer(digits) and is_float(channel) do
     Float.round(channel, digits)
   end
 

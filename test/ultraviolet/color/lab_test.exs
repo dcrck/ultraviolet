@@ -21,7 +21,6 @@ defmodule LabTest do
   for {name, {{r, g, b, a}, {l, a_star, b_star}}} <- cases do
     test "converts #{name} from L*a*b* to RGB properly" do
       assert {:ok, color} = Color.new(unquote(r), unquote(g), unquote(b), unquote(a))
-      # TODO finish
       assert {:ok, lab} = Lab.from_rgb(color, round: false)
       assert Float.round(lab.l, 2) == unquote(l)
       assert Float.round(lab.a_star, 2) == unquote(a_star)
