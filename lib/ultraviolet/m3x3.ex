@@ -20,27 +20,33 @@ defmodule Ultraviolet.M3x3 do
   end
 
   @doc """
-  Multiply matrix `m` by a 3x1 column vector consisting of `[x, y, z]`.
+  Multiply a 1x3 row vector `[x, y, z]` by matrix `m`
 
-  Returns a vector with the result of multiplication; technically, it's a 3x1
-  column vector, but we just return the flat list.
+  ```
+              | m00 m01 m02 |
+  [x, y, z] * | m10 m11 m12 | = [a, b, c]
+              | m20 m21 m22 |
+
+  a = x * m00 + y * m10 + z * m20
+  b = x * m01 + y * m11 + z * m21
+  c = x * m02 + y * m12 + z * m22
+  ```
+
+  returns the result, i.e. `[a, b, c]`
   """
   def mult(%M3x3{} = m, [x, y, z]) do
-    a =
+    [
       D.mult(x, m.m00)
       |> D.add(D.mult(y, m.m10))
-      |> D.add(D.mult(z, m.m20))
+      |> D.add(D.mult(z, m.m20)),
 
-    b =
       D.mult(x, m.m01)
       |> D.add(D.mult(y, m.m11))
-      |> D.add(D.mult(z, m.m21))
+      |> D.add(D.mult(z, m.m21)),
 
-    c =
       D.mult(x, m.m02)
       |> D.add(D.mult(y, m.m12))
       |> D.add(D.mult(z, m.m22))
-
-    [a, b, c]
+    ]
   end
 end
