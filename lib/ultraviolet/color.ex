@@ -5,15 +5,16 @@ defmodule Ultraviolet.Color do
 
   ## Color Spaces
 
-  Colors, by default, are stored in RGBA representation, but supports other
+  Colors, by default, are stored in sRGB representation, but supports other
   color spaces as input to `new/4` and `new/5`, where the last parameter is the
   color space to translate from.
 
   ### Available Spaces
 
-  - RGB (the default): `:rgb`
+  - sRGB (the default): `:rgb`
   - HSL: `:hsl`
   - CIE Lab: `:lab`
+  - LCH: `:lch`
 
   """
   import Bitwise, only: [bsr: 2, band: 2]

@@ -34,7 +34,7 @@ defmodule Ultraviolet.M3x3 do
 
   returns the result, i.e. `[a, b, c]`
   """
-  def mult(%M3x3{} = m, [x, y, z]) do
+  def mult([x, y, z], %M3x3{} = m) do
     [
       D.mult(x, m.m00)
       |> D.add(D.mult(y, m.m10))
