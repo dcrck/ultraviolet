@@ -26,6 +26,7 @@ defmodule Ultraviolet.Color.Lab do
   defstruct l: 0, a_star: 0, b_star: 0, a: 1.0
 
   alias Decimal, as: D
+  alias Ultraviolet.M3x3
   alias Ultraviolet.Color
   alias __MODULE__
 
@@ -34,73 +35,40 @@ defmodule Ultraviolet.Color.Lab do
   @constants %{
     "Kn" => D.new("18"),
     "Yn" => D.new("1.0"),
-    "t0" => D.new("0.137931034"), # 4 / 29
-    "t1" => D.new("0.206896552"), # 6 / 29
-    "t2" => D.new("0.12841855"), # 3 * t1 ^ 2
-    "t3" => D.new("0.008856452"), # t1 ^ 3
     "kE" => D.div(D.new("216"), D.new("24389")),
     "kKE" => D.new("8"),
     "kK" => D.div(D.new("24389"), D.new("27")),
-
-    "RefWhiteRGB" => %{
-      # sRGB
-      "x" => D.new("0.95047"),
-      "y" => D.new("1.0"),
-      "z" => D.new("1.08883")
-    },
-
-    "MtxRGB2XYZ" => %{
-      "m00" => D.new("0.4124564390896922"),
-      "m01" => D.new("0.21267285140562253"),
-      "m02" => D.new("0.0193338955823293"),
-      "m10" => D.new("0.357576077643909"),
-      "m11" => D.new("0.715152155287818"),
-      "m12" => D.new("0.11919202588130297"),
-      "m20" => D.new("0.18043748326639894"),
-      "m21" => D.new("0.07217499330655958"),
-      "m22" => D.new("0.9503040785363679"),
-    },
-
-    "MtxXYZ2RGB" => %{
-      "m00" => D.new("3.2404541621141045"),
-      "m01" => D.new("-0.9692660305051868"),
-      "m02" => D.new("0.055643430959114726"),
-      "m10" => D.new("-1.5371385127977166"),
-      "m11" => D.new("1.8760108454466942"),
-      "m12" => D.new("-0.2040259135167538"),
-      "m20" => D.new("-0.498531409556016"),
-      "m21" => D.new("0.041556017530349834"),
-      "m22" => D.new("1.0572251882231791"),
-    },
-
+    # sRGB x, y, z points
+    "white" => [D.new("0.95047"), D.new("1.0"), D.new("1.08883")],
+    # conversion matrices
+    "rgb2xyz" => M3x3.new([
+      ["0.4124564390896922", "0.21267285140562253", "0.0193338955823293"],
+      ["0.357576077643909", "0.715152155287818", "0.11919202588130297"],
+      ["0.18043748326639894", "0.07217499330655958", "0.9503040785363679"],
+    ]),
+    "xyz2rgb" => M3x3.new([
+      ["3.2404541621141045", "-0.9692660305051868", "0.055643430959114726"],
+      ["-1.5371385127977166", "1.8760108454466942", "-0.2040259135167538"],
+      ["-0.498531409556016", "0.041556017530349834", "1.0572251882231791"],
+    ]),
     # used in Lab.rgb_to_xyz
-    "As" => D.new("0.9414285350000001"),
-    "Bs" => D.new("1.040417467"),
-    "Cs" => D.new("1.089532651"),
+    "a_s" => D.new("0.9414285350000001"),
+    "b_s" => D.new("1.040417467"),
+    "c_s" => D.new("1.089532651"),
 
-    "MtxAdaptMa" => %{
-      "m00" => D.new("0.8951"),
-      "m01" => D.new("-0.7502"),
-      "m02" => D.new("0.0389"),
-      "m10" => D.new("0.2664"),
-      "m11" => D.new("1.7135"),
-      "m12" => D.new("-0.0685"),
-      "m20" => D.new("-0.1614"),
-      "m21" => D.new("0.0367"),
-      "m22" => D.new("1.0296"),
-    },
+    # name taken from chroma.js
+    "AdaptMa" => M3x3.new([
+      ["0.8951", "-0.7502", "0.0389"],
+      ["0.2664", "1.7135", "-0.0685"],
+      ["-0.1614", "0.0367", "1.0296"],
+    ]),
 
-    "MtxAdaptMaI" => %{
-      "m00" => D.new("0.9869929054667123"),
-      "m01" => D.new("0.43230526972339456"),
-      "m02" => D.new("-0.008528664575177328"),
-      "m10" => D.new("-0.14705425642099013"),
-      "m11" => D.new("0.5183602715367776"),
-      "m12" => D.new("0.04004282165408487"),
-      "m20" => D.new("0.15996265166373125"),
-      "m21" => D.new("0.0492912282128556"),
-      "m22" => D.new("0.9684866957875502"),
-    }
+    # name taken from chroma.js
+    "AdaptMaI" => M3x3.new([
+      ["0.9869929054667123", "0.43230526972339456", "-0.008528664575177328"],
+      ["-0.14705425642099013", "0.5183602715367776", "0.04004282165408487"],
+      ["0.15996265166373125", "0.0492912282128556", "0.9684866957875502"],
+    ])
   }
 
   # taken from https://www.mathworks.com/help/images/ref/whitepoint.html
@@ -245,173 +213,47 @@ defmodule Ultraviolet.Color.Lab do
     g = gamma_adjust(D.div(D.new(color.g), 255))
     b = gamma_adjust(D.div(D.new(color.b), 255))
 
-    rgb2xyz = Map.fetch!(@constants, "MtxRGB2XYZ")
+    [x2, y2, z2] = M3x3.mult(Map.fetch!(@constants, "rgb2xyz"), [r, g, b])
 
-    x2 =
-      D.mult(r, rgb2xyz["m00"])
-      |> D.add(D.mult(g, rgb2xyz["m10"]))
-      |> D.add(D.mult(b, rgb2xyz["m20"]))
-
-    y2 =
-      D.mult(r, rgb2xyz["m01"])
-      |> D.add(D.mult(g, rgb2xyz["m11"]))
-      |> D.add(D.mult(b, rgb2xyz["m21"]))
-
-    z2 =
-      D.mult(r, rgb2xyz["m02"])
-      |> D.add(D.mult(g, rgb2xyz["m12"]))
-      |> D.add(D.mult(b, rgb2xyz["m22"]))
-
-    ma = Map.fetch!(@constants, "MtxAdaptMa")
+    ma = Map.fetch!(@constants, "AdaptMa")
     y_n = Map.fetch!(@constants, "Yn")
+
+    [a_d, b_d, c_d] = M3x3.mult(ma, [x_n, y_n, z_n])
     
-    ad =
-      D.mult(x_n, ma["m00"])
-      |> D.add(D.mult(y_n, ma["m10"]))
-      |> D.add(D.mult(z_n, ma["m20"]))
+    %{"a_s" => a_s, "b_s" => b_s, "c_s" => c_s} =
+      Map.take(@constants, ["a_s", "b_s", "c_s"])
 
-    bd =
-      D.mult(x_n, ma["m01"])
-      |> D.add(D.mult(y_n, ma["m11"]))
-      |> D.add(D.mult(z_n, ma["m21"]))
+    [x1, y1, z1] = M3x3.mult(ma, [x2, y2, z2]) 
 
-    cd =
-      D.mult(x_n, ma["m02"])
-      |> D.add(D.mult(y_n, ma["m12"]))
-      |> D.add(D.mult(z_n, ma["m22"]))
-
-    %{"As" => as, "Bs" => bs, "Cs" => cs} =
-      Map.take(@constants, ["As", "Bs", "Cs"])
-
-    x1 =
-      D.mult(x2, ma["m00"])
-      |> D.add(D.mult(y2, ma["m10"]))
-      |> D.add(D.mult(z2, ma["m20"]))
-      |> D.mult(D.div(ad, as))
-
-    y1 =
-      D.mult(x2, ma["m01"])
-      |> D.add(D.mult(y2, ma["m11"]))
-      |> D.add(D.mult(z2, ma["m21"]))
-      |> D.mult(D.div(bd, bs))
-
-    z1 =
-      D.mult(x2, ma["m02"])
-      |> D.add(D.mult(y2, ma["m12"]))
-      |> D.add(D.mult(z2, ma["m22"]))
-      |> D.mult(D.div(cd, cs))
-
-    mai = Map.fetch!(@constants, "MtxAdaptMaI")
-
-    x =
-      D.mult(x1, mai["m00"])
-      |> D.add(D.mult(y1, mai["m10"]))
-      |> D.add(D.mult(z1, mai["m20"]))
-
-    y =
-      D.mult(x1, mai["m01"])
-      |> D.add(D.mult(y1, mai["m11"]))
-      |> D.add(D.mult(z1, mai["m21"]))
-
-    z =
-      D.mult(x1, mai["m02"])
-      |> D.add(D.mult(y1, mai["m12"]))
-      |> D.add(D.mult(z1, mai["m22"]))
-
-    [x, y, z]
+    M3x3.mult(
+      Map.fetch!(@constants, "AdaptMaI"),
+      [
+        D.mult(x1, D.div(a_d, a_s)),
+        D.mult(y1, D.div(b_d, b_s)),
+        D.mult(z1, D.div(c_d, c_s))
+      ]
+    )
   end
 
   defp xyz_to_rgb(x, y, z, {x_n, z_n}) do
-    ma = Map.fetch!(@constants, "MtxAdaptMa")
+    ma = Map.fetch!(@constants, "AdaptMa")
     y_n = Map.fetch!(@constants, "Yn")
 
-    # can probably be simplified with dot product at some point...
-    as =
-      D.mult(x_n, ma["m00"])
-      |> D.add(D.mult(y_n, ma["m10"]))
-      |> D.add(D.mult(z_n, ma["m20"]))
-
-    bs =
-      D.mult(x_n, ma["m01"])
-      |> D.add(D.mult(y_n, ma["m11"]))
-      |> D.add(D.mult(z_n, ma["m21"]))
-
-    cs =
-      D.mult(x_n, ma["m02"])
-      |> D.add(D.mult(y_n, ma["m12"]))
-      |> D.add(D.mult(z_n, ma["m22"]))
-
-    white = Map.fetch!(@constants, "RefWhiteRGB")
-
-    ad =
-      D.mult(white["x"], ma["m00"])
-      |> D.add(D.mult(white["y"], ma["m10"]))
-      |> D.add(D.mult(white["z"], ma["m20"]))
-
-    bd =
-      D.mult(white["x"], ma["m01"])
-      |> D.add(D.mult(white["y"], ma["m11"]))
-      |> D.add(D.mult(white["z"], ma["m21"]))
-
-    cd =
-      D.mult(white["x"], ma["m02"])
-      |> D.add(D.mult(white["y"], ma["m12"]))
-      |> D.add(D.mult(white["z"], ma["m22"]))
-
-    x1 =
-      D.mult(x, ma["m00"])
-      |> D.add(D.mult(y, ma["m10"]))
-      |> D.add(D.mult(z, ma["m20"]))
-      |> D.mult(D.div(ad, as))
-
-    y1 =
-      D.mult(x, ma["m01"])
-      |> D.add(D.mult(y, ma["m11"]))
-      |> D.add(D.mult(z, ma["m21"]))
-      |> D.mult(D.div(bd, bs))
-
-    z1 =
-      D.mult(x, ma["m02"])
-      |> D.add(D.mult(y, ma["m12"]))
-      |> D.add(D.mult(z, ma["m22"]))
-      |> D.mult(D.div(cd, cs))
-
-    mai = Map.fetch!(@constants, "MtxAdaptMaI")
-
-    x2 =
-      D.mult(x1, mai["m00"])
-      |> D.add(D.mult(y1, mai["m10"]))
-      |> D.add(D.mult(z1, mai["m20"]))
-
-    y2 =
-      D.mult(x1, mai["m01"])
-      |> D.add(D.mult(y1, mai["m11"]))
-      |> D.add(D.mult(z1, mai["m21"]))
-
-    z2 =
-      D.mult(x1, mai["m02"])
-      |> D.add(D.mult(y1, mai["m12"]))
-      |> D.add(D.mult(z1, mai["m22"]))
-
-    xyz2rgb = Map.fetch!(@constants, "MtxXYZ2RGB")
-
-    r = compand(
-      D.mult(x2, xyz2rgb["m00"])
-      |> D.add(D.mult(y2, xyz2rgb["m10"]))
-      |> D.add(D.mult(z2, xyz2rgb["m20"]))
+    [a_s, b_s, c_s] = M3x3.mult(ma, [x_n, y_n, z_n]) 
+    [a_d, b_d, c_d] = M3x3.mult(ma, Map.fetch!(@constants, "white"))
+    [x1, y1, z1] = M3x3.mult(ma, [x, y, z])
+    [x2, y2, z2] = M3x3.mult(
+      Map.fetch!(@constants, "AdaptMaI"),
+      [
+        D.mult(x1, D.div(a_d, a_s)),
+        D.mult(y1, D.div(b_d, b_s)),
+        D.mult(z1, D.div(c_d, c_s)),
+      ]
     )
-    g = compand(
-      D.mult(x2, xyz2rgb["m01"])
-      |> D.add(D.mult(y2, xyz2rgb["m11"]))
-      |> D.add(D.mult(z2, xyz2rgb["m21"]))
+    Enum.map(
+      M3x3.mult(Map.fetch!(@constants, "xyz2rgb"), [x2, y2, z2]),
+      &compand/1
     )
-    b = compand(
-      D.mult(x2, xyz2rgb["m02"])
-      |> D.add(D.mult(y2, xyz2rgb["m12"]))
-      |> D.add(D.mult(z2, xyz2rgb["m22"]))
-    )
-
-    [r, g, b]
   end
 
   defp xyz_to_lab(x, y, z, {x_n, z_n}) do
