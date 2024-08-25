@@ -1,6 +1,6 @@
 defmodule Ultraviolet.Color.HSL do
   @moduledoc """
-  Functions for working in the HSL color space
+  Functions for working in the HSL color space.
   """
   defstruct h: 0, s: 0.0, l: 0.0, a: 1.0
 
@@ -10,7 +10,7 @@ defmodule Ultraviolet.Color.HSL do
   @me __MODULE__
 
   defguardp is_hue(h) when is_integer(h) and h >= 0 and h <= 360
-  defguardp is_normalized(n) when (is_float(n) and n >= 0 and n <= 1) or n == 0 or n == 1
+  defguardp is_normalized(n) when is_number(n) and n >= 0 and n <= 1
 
   @doc """
   Generates a new HSL color object

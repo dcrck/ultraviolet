@@ -13,11 +13,12 @@ defmodule Ultraviolet.Color do
 
   - RGB (the default): `:rgb`
   - HSL: `:hsl`
+  - CIE Lab: `:lab`
 
   """
   import Bitwise, only: [bsr: 2, band: 2]
 
-  alias Ultraviolet.Color.{HSL, HSV}
+  alias Ultraviolet.Color.{HSL, HSV, Lab}
   alias __MODULE__
 
   @me __MODULE__
@@ -98,6 +99,15 @@ defmodule Ultraviolet.Color do
       iex>Ultraviolet.Color.new(330, 0, 1, :hsv)
       {:ok, %Ultraviolet.Color{r: 255, g: 255, b: 255, a: 1.0}}
 
+  #### Lab
+
+      iex>Ultraviolet.Color.new(40, -20, 50, :lab)
+      {:ok, %Ultraviolet.Color{r: 83, g: 102, b: 0, a: 1.0}}
+      iex>Ultraviolet.Color.new(50, -20, 50, :lab)
+      {:ok, %Ultraviolet.Color{r: 110, g: 127, b: 21, a: 1.0}}
+      iex>Ultraviolet.Color.new(80, -20, 50, :lab)
+      {:ok, %Ultraviolet.Color{r: 192, g: 207, b: 102, a: 1.0}}
+
   """
   for line <- File.stream!(named_colors_path, [], :line) do
     [name, hex] = line |> String.split(" ") |> Enum.map(&String.trim/1)
@@ -166,29 +176,43 @@ defmodule Ultraviolet.Color do
   # RGB values
   def new(r, g, b), do: new(r, g, b, :rgb)
 
-  def new(r, g, b, :rgb) when is_byte(r) and is_byte(g) and is_byte(b) do
+  def new(r, g, b, :rgb), do: new(r, g, b, 1.0, :rgb)
+  def new(h, s, l, :hsl), do: new(h, s, l, 1.0, :hsl)
+  def new(h, s, v, :hsv), do: new(h, s, v, 1.0, :hsv)
+  def new(l, a, b, :lab), do: new(l, a, b, 1.0, :lab, [])
+
+  def new(r, g, b, a), do: new(r, g, b, a, :rgb)
+
+  def new(r, g, b, a, :rgb)
+  when is_normalized(a) and is_byte(r) and is_byte(g) and is_byte(b) do
     {:ok, struct(@me, r: r, g: g, b: b)}
   end
 
-  def new(h, s, l, :hsl) do
-    case HSL.new(h, s, l) do
+  def new(h, s, l, a, :hsl) do
+    case HSL.new(h, s, l, a) do
       {:ok, hsl} -> HSL.to_rgb(hsl)
       error -> error
     end
   end
 
-  def new(h, s, v, :hsv) do
-    case HSV.new(h, s, v) do
+  def new(h, s, v, a, :hsv) do
+    case HSV.new(h, s, v, a) do
       {:ok, hsv} -> HSV.to_rgb(hsv)
       error -> error
     end
   end
-
-  def new(r, g, b, a) when is_normalized(a) and is_byte(r) and is_byte(g) and is_byte(b) do
-    {:ok, struct(@me, r: r, g: g, b: b, a: a)}
+  def new(l, a_star, b_star, a, :lab), do: new(l, a_star, b_star, a, :lab, [])
+  def new(l, a_star, b_star, :lab, options) when is_list(options) do
+    new(l, a_star, b_star, 1.0, :lab, options)
   end
 
-  def new(_, _, _, _), do: {:error, :invalid}
+  def new(_, _, _, _, _), do: {:error, :invalid}
+
+  def new(l, a_star, b_star, a, :lab, options) when is_list(options) do
+    {:ok, lab} = Lab.new(l, a_star, b_star, a)
+    Lab.to_rgb(lab, options)
+  end
+  def new(_, _, _, _, _, _), do: {:error, :invalid}
 
   defp parse_hex_list(arg_list) when is_list(arg_list) do
     Enum.reduce_while(arg_list, [], fn {key, hex}, acc ->
@@ -220,9 +244,22 @@ defmodule Ultraviolet.Color do
       iex> Ultraviolet.Color.into(color, :hsv)
       {:ok, %Ultraviolet.Color.HSV{h: 330, s: 0.8, v: 1.0}}
 
+  ### Lab
+
+      iex>{:ok, color} = Ultraviolet.Color.new("hotpink")
+      {:ok, %Ultraviolet.Color{r: 255, g: 105, b: 180}}
+      iex> Ultraviolet.Color.into(color, :lab)
+      {:ok, %Ultraviolet.Color.Lab{l: 65.49, a_star: 64.24, b_star: -10.65}}
+      iex> Ultraviolet.Color.into(color, :lab, reference: :f2)
+      {:ok, %Ultraviolet.Color.Lab{l: 66.28, a_star: 61.45, b_star: -8.62}}
+
   """
   def into(%Color{} = color, :hsl), do: HSL.from_rgb(color)
   def into(%Color{} = color, :hsv), do: HSV.from_rgb(color)
+
+  def into(%Color{} = color, :lab, options \\ []) when is_list(options) do
+    Lab.from_rgb(color, options)
+  end
 
   def hex(%Color{r: r, g: g, b: b, a: 1.0}) do
     [r, g, b]
