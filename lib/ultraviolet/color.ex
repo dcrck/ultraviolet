@@ -14,13 +14,14 @@ defmodule Ultraviolet.Color do
   - sRGB (the default): `:rgb`
   - HSL: `:hsl`
   - CIE Lab: `:lab`
-  - LCH: `:lch`
+  - LCH: `:lch`, `:hcl`
   - OKLab: `:oklab`
+  - OKLCH: `:oklch`
 
   """
   import Bitwise, only: [bsr: 2, band: 2]
 
-  alias Ultraviolet.Color.{HSL, HSV, Lab, LCH, OKLab}
+  alias Ultraviolet.Color.{HSL, HSV, Lab, LCH, OKLab, OKLCH}
   alias __MODULE__
 
   @me __MODULE__
@@ -126,6 +127,13 @@ defmodule Ultraviolet.Color do
       iex>Ultraviolet.Color.new(0.8, -0.2, 0.5, :oklab)
       {:ok, %Ultraviolet.Color{r: 217, g: 197, b: 0, a: 1.0}}
 
+  #### OKLCH
+
+      iex>Ultraviolet.Color.new(0.5, 0.2, 240, :oklch)
+      {:ok, %Ultraviolet.Color{r: 0, g: 105, b: 199, a: 1.0}}
+      iex>Ultraviolet.Color.new(0.8, 0.12, 60, :oklch)
+      {:ok, %Ultraviolet.Color{r: 246, g: 171, b: 107, a: 1.0}}
+
   """
   for line <- File.stream!(named_colors_path, [], :line) do
     [name, hex] = line |> String.split(" ") |> Enum.map(&String.trim/1)
@@ -201,6 +209,7 @@ defmodule Ultraviolet.Color do
   def new(l, c, h, :lch), do: new(l, c, h, 1.0, :lch, [])
   def new(h, c, l, :hcl), do: new(l, c, h, 1.0, :lch, [])
   def new(l, a, b, :oklab), do: new(l, a, b, 1.0, :oklab, [])
+  def new(l, c, h, :oklch), do: new(l, c, h, 1.0, :oklch, [])
 
   def new(r, g, b, a), do: new(r, g, b, a, :rgb)
 
@@ -236,8 +245,14 @@ defmodule Ultraviolet.Color do
 
   def new(l, c, h, a, :lch), do: new(l, c, h, a, :lch, [])
 
+  def new(l, c, h, a, :oklch), do: new(l, c, h, a, :oklch, [])
+
   def new(l, c, h, :lch, options) when is_list(options) do
     new(l, c, h, 1.0, :lch, options)
+  end
+
+  def new(l, c, h, :oklch, options) when is_list(options) do
+    new(l, c, h, 1.0, :oklch, options)
   end
 
   def new(h, c, l, a, :hcl), do: new(l, c, h, a, :lch, [])
@@ -261,6 +276,11 @@ defmodule Ultraviolet.Color do
   def new(l, c, h, a, :lch, options) when is_list(options) do
     {:ok, lch} = LCH.new(l, c, h, a)
     LCH.to_rgb(lch, options)
+  end
+
+  def new(l, c, h, a, :oklch, options) when is_list(options) do
+    {:ok, oklch} = OKLCH.new(l, c, h, a)
+    OKLCH.to_rgb(oklch, options)
   end
 
   def new(h, c, l, a, :hcl, options) when is_list(options) do
@@ -292,7 +312,7 @@ defmodule Ultraviolet.Color do
       iex> Ultraviolet.Color.into(color, :hsl)
       {:ok, %Ultraviolet.Color.HSL{h: 330, s: 1.0, l: 0.6}}
 
-  ### HSV
+  ### HSV / HSB
 
       iex>{:ok, color} = Ultraviolet.Color.new("#ff3399")
       {:ok, %Ultraviolet.Color{r: 255, g: 51, b: 153}}

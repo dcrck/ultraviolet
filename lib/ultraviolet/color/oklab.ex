@@ -39,7 +39,7 @@ defmodule Ultraviolet.Color.OKLab do
   ])
 
   defguardp is_normalized(n) when is_number(n) and n >= 0 and n <= 1
-  defguardp is_ok(n) when is_number(n) and n >= -1 and n <= 1
+  defguardp is_ok(n) when is_number(n) and n >= -1.00001 and n <= 1.00001
   @doc"""
   Generates a new OKLab color
   """
