@@ -242,8 +242,8 @@ defmodule Ultraviolet.Color do
   end
 
   @doc """
-  Performs temperature estimation of a given color, though this only
-  makes sense for colors from the temperature gradient.
+  Estimates the temperature of a given color, though this only makes sense for
+  colors from the temperature gradient.
 
   ## Examples
 
