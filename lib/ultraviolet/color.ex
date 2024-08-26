@@ -204,69 +204,38 @@ defmodule Ultraviolet.Color do
 
   def new(_), do: {:error, :invalid}
 
-  # RGB values
-  def new(r, g, b), do: new(r, g, b, :rgb)
+  def new(p1, p2, p3, options \\ [])
 
-  def new(r, g, b, :rgb), do: new(r, g, b, 1.0, :rgb)
-  def new(h, s, l, :hsl), do: new(h, s, l, 1.0, :hsl)
-  def new(h, s, v, :hsv), do: new(h, s, v, 1.0, :hsv)
-  def new(l, a, b, :lab), do: new(l, a, b, 1.0, :lab, [])
-  def new(l, c, h, :lch), do: new(l, c, h, 1.0, :lch, [])
-  def new(h, c, l, :hcl), do: new(l, c, h, 1.0, :lch, [])
-  def new(l, a, b, :oklab), do: new(l, a, b, 1.0, :oklab, [])
-  def new(l, c, h, :oklch), do: new(l, c, h, 1.0, :oklch, [])
+  def new(p1, p2, p3, options) when is_list(options) do
+    {mode, options} = Keyword.pop(options, :mode, :rgb)
+    {a, options} = Keyword.pop(options, :alpha, 1.0)
+    new(p1, p2, p3, a, mode, options)
+  end
+  def new(p1, p2, p3, mode) when is_atom(mode), do: new(p1, p2, p3, mode: mode)
+  def new(p1, p2, p3, a) when is_normalized(a), do: new(p1, p2, p3, alpha: a)
 
-  def new(r, g, b, a), do: new(r, g, b, a, :rgb)
+  def new(p1, p2, p3, a, mode) when is_atom(mode) and is_normalized(a) do
+    new(p1, p2, p3, mode: mode, alpha: a)
+  end
 
-  def new(r, g, b, a, :rgb)
+  def new(r, g, b, a, :rgb, _options)
   when is_normalized(a) and is_byte(r) and is_byte(g) and is_byte(b) do
     {:ok, struct(@me, r: r, g: g, b: b)}
   end
 
-  def new(h, s, l, a, :hsl) do
+  def new(h, s, l, a, :hsl, _options) do
     case HSL.new(h, s, l, a) do
       {:ok, hsl} -> HSL.to_rgb(hsl)
       error -> error
     end
   end
 
-  def new(h, s, v, a, :hsv) do
+  def new(h, s, v, a, :hsv, _options) do
     case HSV.new(h, s, v, a) do
       {:ok, hsv} -> HSV.to_rgb(hsv)
       error -> error
     end
   end
-
-  def new(l, a_star, b_star, a, :lab), do: new(l, a_star, b_star, a, :lab, [])
-  def new(l, a_star, b_star, a, :oklab), do: new(l, a_star, b_star, a, :oklab, [])
-
-  def new(l, a_star, b_star, :lab, options) when is_list(options) do
-    new(l, a_star, b_star, 1.0, :lab, options)
-  end
-
-  def new(l, a_star, b_star, :oklab, options) when is_list(options) do
-    new(l, a_star, b_star, 1.0, :oklab, options)
-  end
-
-  def new(l, c, h, a, :lch), do: new(l, c, h, a, :lch, [])
-
-  def new(l, c, h, a, :oklch), do: new(l, c, h, a, :oklch, [])
-
-  def new(l, c, h, :lch, options) when is_list(options) do
-    new(l, c, h, 1.0, :lch, options)
-  end
-
-  def new(l, c, h, :oklch, options) when is_list(options) do
-    new(l, c, h, 1.0, :oklch, options)
-  end
-
-  def new(h, c, l, a, :hcl), do: new(l, c, h, a, :lch, [])
-
-  def new(h, c, l, :hcl, options) when is_list(options) do
-    new(l, c, h, 1.0, :lch, options)
-  end
-
-  def new(_, _, _, _, _), do: {:error, :invalid}
 
   def new(l, a_star, b_star, a, :lab, options) when is_list(options) do
     {:ok, lab} = Lab.new(l, a_star, b_star, a)
