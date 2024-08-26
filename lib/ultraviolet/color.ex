@@ -223,13 +223,10 @@ defmodule Ultraviolet.Color do
       {:ok, %Ultraviolet.Color.OKLab{l: 0.81, a_star: -0.04, b_star: 0.17}}
 
   """
-  def into(%Color{} = color, :hsl), do: HSL.from_rgb(color)
-  def into(%Color{} = color, :hsv), do: HSV.from_rgb(color)
+  def into(color, mode, options \\ [])
 
-  def into(%Color{} = color, :lab), do: into(color, :lab, [])
-  def into(%Color{} = color, :oklab), do: into(color, :oklab, [])
-  def into(%Color{} = color, :hcl), do: into(color, :hcl, [])
-  def into(%Color{} = color, :lch), do: into(color, :hcl, [])
+  def into(%Color{} = color, :hsl, _options), do: HSL.from_rgb(color)
+  def into(%Color{} = color, :hsv, _options), do: HSV.from_rgb(color)
 
   def into(%Color{} = color, :lab, options) when is_list(options) do
     Lab.from_rgb(color, options)
