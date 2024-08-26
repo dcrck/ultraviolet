@@ -22,7 +22,7 @@ defmodule Ultraviolet.Color.Lab do
   - `:icc`
 
   """
-  defstruct l: 0, a_star: 0, b_star: 0, a: 1.0
+  defstruct l_: 0, a_: 0, b_: 0, a: 1.0
 
   alias Decimal, as: D
   alias Ultraviolet.Color
@@ -43,10 +43,10 @@ defmodule Ultraviolet.Color.Lab do
   @doc"""
   Generates a new CIE Lab color
   """
-  def new(l, a_star, b_star), do: new(l, a_star, b_star, 1.0)
+  def new(l, a, b), do: new(l, a, b, 1.0)
 
-  def new(l, a_star, b_star, a) when is_normalized(a) do
-    {:ok, struct(@me, l: l, a_star: a_star, b_star: b_star, a: a)}
+  def new(l, a, b, a_) when is_normalized(a_) do
+    {:ok, struct(@me, l_: l, a_: a, b_: b, a: a_)}
   end
 
   @doc """
@@ -103,9 +103,9 @@ defmodule Ultraviolet.Color.Lab do
   defp clamp_to_byte(n), do: min(max(n, 0), 255)
 
   defp lab_to_xyz(%Lab{} = lab, [x, y, z]) do
-    l = D.new(to_string(lab.l))
-    a = D.new(to_string(lab.a_star))
-    b = D.new(to_string(lab.b_star))
+    l = D.new(to_string(lab.l_))
+    a = D.new(to_string(lab.a_))
+    b = D.new(to_string(lab.b_))
 
     fy = D.div(D.add(l, D.new(16)), D.new(116))
     fx = D.add(D.mult(D.new("0.002"), a), fy)

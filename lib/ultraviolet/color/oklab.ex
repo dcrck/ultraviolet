@@ -5,7 +5,7 @@ defmodule Ultraviolet.Color.OKLab do
 
   Uses the `:d65` reference illuminant.
   """
-  defstruct l: 0, a_star: 0, b_star: 0, a: 1.0
+  defstruct l_: 0, a_: 0, b_: 0, a: 1.0
 
   alias Decimal, as: D
 
@@ -43,11 +43,11 @@ defmodule Ultraviolet.Color.OKLab do
   @doc"""
   Generates a new OKLab color
   """
-  def new(l, a_star, b_star), do: new(l, a_star, b_star, 1.0)
+  def new(l, a, b), do: new(l, a, b, 1.0)
 
-  def new(l, a_star, b_star, a)
-  when is_normalized(a) and is_ok(l) and is_ok(a_star) and is_ok(b_star) do
-    {:ok, struct(OKLab, l: l, a_star: a_star, b_star: b_star, a: a)}
+  def new(l, a, b, a_)
+  when is_normalized(a_) and is_ok(l) and is_ok(a) and is_ok(b) do
+    {:ok, struct(OKLab, l_: l, a_: a, b_: b, a: a_)}
   end
 
   @doc """
@@ -61,7 +61,7 @@ defmodule Ultraviolet.Color.OKLab do
   def to_rgb(%OKLab{} = oklab, options \\ []) when is_list(options) do
     round = Keyword.get(options, :round, 0)
 
-    [oklab.l, oklab.a_star, oklab.b_star]
+    [oklab.l_, oklab.a_, oklab.b_]
     # convert to decimal
     |> Enum.map(&D.new(to_string(&1)))
     # OKLab to LMS

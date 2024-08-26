@@ -202,9 +202,9 @@ defmodule Ultraviolet.Color do
       iex>{:ok, color} = Ultraviolet.Color.new("hotpink")
       {:ok, %Ultraviolet.Color{r: 255, g: 105, b: 180}}
       iex> Ultraviolet.Color.into(color, :lab)
-      {:ok, %Ultraviolet.Color.Lab{l: 65.49, a_star: 64.24, b_star: -10.65}}
+      {:ok, %Ultraviolet.Color.Lab{l_: 65.49, a_: 64.24, b_: -10.65}}
       iex> Ultraviolet.Color.into(color, :lab, reference: :f2)
-      {:ok, %Ultraviolet.Color.Lab{l: 66.28, a_star: 61.45, b_star: -8.62}}
+      {:ok, %Ultraviolet.Color.Lab{l_: 66.28, a_: 61.45, b_: -8.62}}
 
   ### LCH / HCL
 
@@ -220,7 +220,7 @@ defmodule Ultraviolet.Color do
       iex>{:ok, color} = Ultraviolet.Color.new("#d9c500")
       {:ok, %Ultraviolet.Color{r: 217, g: 197, b: 0, a: 1.0}}
       iex> Ultraviolet.Color.into(color, :oklab, round: 2)
-      {:ok, %Ultraviolet.Color.OKLab{l: 0.81, a_star: -0.04, b_star: 0.17}}
+      {:ok, %Ultraviolet.Color.OKLab{l_: 0.81, a_: -0.04, b_: 0.17}}
 
   """
   def into(color, mode, options \\ [])

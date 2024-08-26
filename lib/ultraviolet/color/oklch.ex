@@ -63,7 +63,7 @@ defmodule Ultraviolet.Color.OKLCH do
     |> then(&OKLab.new(l, :math.cos(&1) * c, :math.sin(&1) * c, a))
   end
 
-  defp oklab_to_lch(%OKLab{a_star: a, b_star: b} = oklab, options) do
+  defp oklab_to_lch(%OKLab{a_: a, b_: b} = oklab, options) do
     round = Keyword.get(options, :round, 2)
     c = :math.sqrt(a * a + b * b)
     h = cond do
@@ -71,7 +71,7 @@ defmodule Ultraviolet.Color.OKLCH do
       true -> mod(rad_to_deg(:math.atan2(b, a)) + 360, 360)
     end
 
-    [oklab.l, c, h]
+    [oklab.l_, c, h]
     |> Enum.map(&maybe_round(&1, round))
     |> then(fn [l, c, h] -> OKLCH.new(l, c, h, oklab.a) end)
   end

@@ -21,15 +21,15 @@ defmodule OKLCHTest do
   for {name, {{r, g, b, a}, {l, c, h}}} <- cases do
     test "converts #{name} from OKLCH to RGB properly" do
       assert {:ok, color} = Color.new(unquote(r), unquote(g), unquote(b), unquote(a))
-      assert {:ok, lab} = OKLCH.from_rgb(color, round: false)
-      assert Float.round(lab.l, 3) == unquote(l)
-      assert Float.round(lab.c, 3) == unquote(c)
-      case lab.h do
+      assert {:ok, oklch} = OKLCH.from_rgb(color, round: false)
+      assert Float.round(oklch.l, 3) == unquote(l)
+      assert Float.round(oklch.c, 3) == unquote(c)
+      case oklch.h do
         0 -> assert unquote(h) == 0
         other -> assert Float.round(other, 3) == unquote(h)
       end
-      assert lab.a == unquote(a)
-      assert {:ok, ^color} = OKLCH.to_rgb(lab)
+      assert oklch.a == unquote(a)
+      assert {:ok, ^color} = OKLCH.to_rgb(oklch)
     end
   end
 end

@@ -22,9 +22,9 @@ defmodule OKLabTest do
     test "converts #{name} from OKLab to RGB properly" do
       assert {:ok, color} = Color.new(unquote(r), unquote(g), unquote(b), unquote(a))
       assert {:ok, lab} = OKLab.from_rgb(color, round: false)
-      assert Float.round(lab.l, 3) == unquote(l)
-      assert Float.round(lab.a_star, 3) == unquote(a_star)
-      assert Float.round(lab.b_star, 3) == unquote(b_star)
+      assert Float.round(lab.l_, 3) == unquote(l)
+      assert Float.round(lab.a_, 3) == unquote(a_star)
+      assert Float.round(lab.b_, 3) == unquote(b_star)
       assert lab.a == unquote(a)
       assert {:ok, ^color} = OKLab.to_rgb(lab)
     end

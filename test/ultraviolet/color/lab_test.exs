@@ -22,9 +22,9 @@ defmodule LabTest do
     test "converts #{name} from L*a*b* to RGB properly" do
       assert {:ok, color} = Color.new(unquote(r), unquote(g), unquote(b), unquote(a))
       assert {:ok, lab} = Lab.from_rgb(color, round: false)
-      assert Float.round(lab.l, 2) == unquote(l)
-      assert Float.round(lab.a_star, 2) == unquote(a_star)
-      assert Float.round(lab.b_star, 2) == unquote(b_star)
+      assert Float.round(lab.l_, 2) == unquote(l)
+      assert Float.round(lab.a_, 2) == unquote(a_star)
+      assert Float.round(lab.b_, 2) == unquote(b_star)
       assert lab.a == unquote(a)
       assert {:ok, ^color} = Lab.to_rgb(lab)
     end

@@ -63,7 +63,7 @@ defmodule Ultraviolet.Color.LCH do
     |> then(&Lab.new(l, :math.cos(&1) * c, :math.sin(&1) * c, a))
   end
 
-  defp lab_to_lch(%Lab{a_star: a, b_star: b} = lab, options) do
+  defp lab_to_lch(%Lab{a_: a, b_: b} = lab, options) do
     round = Keyword.get(options, :round, 2)
     c = :math.sqrt(a * a + b * b)
     h = cond do
@@ -71,7 +71,7 @@ defmodule Ultraviolet.Color.LCH do
       true -> mod(rad_to_deg(:math.atan2(b, a)) + 360, 360)
     end
 
-    [lab.l, c, h]
+    [lab.l_, c, h]
     |> Enum.map(&maybe_round(&1, round))
     |> then(fn [l, c, h] -> new(l, c, h, lab.a) end)
   end
