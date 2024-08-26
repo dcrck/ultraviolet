@@ -1,4 +1,4 @@
 defmodule UltravioletTest do
   use ExUnit.Case
-  # doctest Ultraviolet
+  doctest Ultraviolet
 end

@@ -23,7 +23,7 @@ defmodule Ultraviolet.Color.Temperature do
   Converts a color into an approximate temperature.
   """
   def from_rgb(%Color{r: r, b: b}) do
-    round(find_temp(b / r, 1000, 40_000, 0.4, 20_500))
+    round(find_temp(b / r, 1000, 40_000, 0.4, 0))
   end
 
   defp find_temp(_ratio, min, max, eps, temp) when max - min <= eps, do: temp

@@ -40,106 +40,6 @@ defmodule Ultraviolet.Color do
   # source of named colors
   @external_resource named_colors_path = Path.join([__DIR__, "named-colors.txt"])
 
-  @doc"""
-  The first step to get your color into Ultraviolet is to create a
-  Color struct. This can be done through `new/1` or `Ultraviolet.color/1`.
-
-  ## Examples
-
-  This function supports a wide variety of inputs:
-
-  ### Named colors
-
-  All named colors as defined by the
-  [W3CX11 specification](https://en.wikipedia.org/wiki/X11_color_names) are
-  supported:
-
-      iex>Ultraviolet.Color.new("hotpink")
-      {:ok, %Ultraviolet.Color{r: 255, g: 105, b: 180, a: 1.0}}
-
-  ### Hexadecimal Strings
-
-  If there's no matching named color, check for a hexidecimal string.
-  It ignores case, the `#` sign is optional, and it can recognize the
-  shorter 3-letter format.
-
-      iex>Ultraviolet.Color.new("#ff3399")
-      {:ok, %Ultraviolet.Color{r: 255, g: 51, b: 153, a: 1.0}}
-      iex>Ultraviolet.Color.new("F39")
-      {:ok, %Ultraviolet.Color{r: 255, g: 51, b: 153, a: 1.0}}
-
-
-  ### Hexadecimal Numbers
-
-  Any number between `0` and `16_777_215` will be recognized as a Color:
-
-      iex>Ultraviolet.Color.new(0xff3399)
-      {:ok, %Ultraviolet.Color{r: 255, g: 51, b: 153, a: 1.0}}
-  
-  ### Individual R, G, B
-
-  You can also pass RGB values individually, Each parameter must be within
-  `0..255`. You can pass the numbers as individual arguments or as an array.
-
-      iex>Ultraviolet.Color.new(0xff, 0x33, 0x99)
-      {:ok, %Ultraviolet.Color{r: 255, g: 51, b: 153, a: 1.0}}
-      iex>Ultraviolet.Color.new(255, 51, 153)
-      {:ok, %Ultraviolet.Color{r: 255, g: 51, b: 153, a: 1.0}}
-      iex>Ultraviolet.Color.new([255, 51, 153])
-      {:ok, %Ultraviolet.Color{r: 255, g: 51, b: 153, a: 1.0}}
-
-  ### Other Color Spaces
-
-  You can construct colors from different color spaces as well by passing an
-  atom identifying the color space as the last argument.
-
-  #### HSL
-
-      iex>Ultraviolet.Color.new(330, 1, 0.6, :hsl)
-      {:ok, %Ultraviolet.Color{r: 255, g: 51, b: 153, a: 1.0}}
-      iex>Ultraviolet.Color.new(330, 0, 1, :hsl)
-      {:ok, %Ultraviolet.Color{r: 255, g: 255, b: 255, a: 1.0}}
-
-  #### HSV
-
-      iex>Ultraviolet.Color.new(330, 0.8, 1, :hsv)
-      {:ok, %Ultraviolet.Color{r: 255, g: 51, b: 153, a: 1.0}}
-      iex>Ultraviolet.Color.new(330, 0, 1, :hsv)
-      {:ok, %Ultraviolet.Color{r: 255, g: 255, b: 255, a: 1.0}}
-
-  #### Lab
-
-      iex>Ultraviolet.Color.new(40, -20, 50, :lab)
-      {:ok, %Ultraviolet.Color{r: 83, g: 102, b: 0, a: 1.0}}
-      iex>Ultraviolet.Color.new(50, -20, 50, :lab)
-      {:ok, %Ultraviolet.Color{r: 110, g: 127, b: 21, a: 1.0}}
-      iex>Ultraviolet.Color.new(80, -20, 50, :lab)
-      {:ok, %Ultraviolet.Color{r: 192, g: 207, b: 102, a: 1.0}}
-
-  #### LCH / HCL
-
-      iex>Ultraviolet.Color.new(80, 40, 130, :lch)
-      {:ok, %Ultraviolet.Color{r: 170, g: 210, b: 140, a: 1.0}}
-      iex>Ultraviolet.Color.new(130, 40, 80, :hcl)
-      {:ok, %Ultraviolet.Color{r: 170, g: 210, b: 140, a: 1.0}}
-
-  #### OKLab
-
-      iex>Ultraviolet.Color.new(0.4, -0.2, 0.5, :oklab)
-      {:ok, %Ultraviolet.Color{r: 98, g: 68, b: 0, a: 1.0}}
-      iex>Ultraviolet.Color.new(0.5, -0.2, 0.5, :oklab)
-      {:ok, %Ultraviolet.Color{r: 128, g: 97, b: 0, a: 1.0}}
-      iex>Ultraviolet.Color.new(0.8, -0.2, 0.5, :oklab)
-      {:ok, %Ultraviolet.Color{r: 217, g: 197, b: 0, a: 1.0}}
-
-  #### OKLCH
-
-      iex>Ultraviolet.Color.new(0.5, 0.2, 240, :oklch)
-      {:ok, %Ultraviolet.Color{r: 0, g: 105, b: 199, a: 1.0}}
-      iex>Ultraviolet.Color.new(0.8, 0.12, 60, :oklch)
-      {:ok, %Ultraviolet.Color{r: 246, g: 171, b: 107, a: 1.0}}
-
-  """
   for line <- File.stream!(named_colors_path, [], :line) do
     [name, hex] = line |> String.split(" ") |> Enum.map(&String.trim/1)
 
@@ -211,12 +111,16 @@ defmodule Ultraviolet.Color do
     {a, options} = Keyword.pop(options, :alpha, 1.0)
     new(p1, p2, p3, a, mode, options)
   end
+
   def new(p1, p2, p3, mode) when is_atom(mode), do: new(p1, p2, p3, mode: mode)
   def new(p1, p2, p3, a) when is_normalized(a), do: new(p1, p2, p3, alpha: a)
+  def new(_, _, _, _), do: {:error, :invalid}
 
   def new(p1, p2, p3, a, mode) when is_atom(mode) and is_normalized(a) do
     new(p1, p2, p3, mode: mode, alpha: a)
   end
+
+  def new(_, _, _, _, _), do: {:error, :invalid}
 
   def new(r, g, b, a, :rgb, _options)
   when is_normalized(a) and is_byte(r) and is_byte(g) and is_byte(b) do
@@ -341,18 +245,29 @@ defmodule Ultraviolet.Color do
   end
 
   @doc """
-  Converts a temperature into a color, based on the color temperature scale.
+  Performs temperature estimation of a given color, though this only
+  makes sense for colors from the temperature gradient.
 
   ## Examples
 
-      iex>Ultraviolet.Color.temperature(2000)
-      {:ok, %Ultraviolet.Color{r: 255, g: 139, b: 20, a: 1.0}}
-      iex>Ultraviolet.Color.temperature(3500)
-      {:ok, %Ultraviolet.Color{r: 255, g: 195, b: 138, a: 1.0}}
-      iex>Ultraviolet.Color.temperature(6500)
-      {:ok, %Ultraviolet.Color{r: 255, g: 250, b: 254, a: 1.0}}
+    iex> {:ok, color} = Color.new("#ff3300");
+    iex> Color.temperature(color)
+    1000
+    iex> {:ok, color} = Color.new("#ff8a13");
+    iex> Color.temperature(color)
+    2000
+    iex> {:ok, color} = Color.new("#ffe3cd");
+    iex> Color.temperature(color)
+    4985
+    iex> {:ok, color} = Color.new("#cbdbff");
+    iex> Color.temperature(color)
+    10049
+    iex> {:ok, color} = Color.new("#b3ccff");
+    iex> Color.temperature(color)
+    15005
+
   """
-  def temperature(kelvin), do: Temperature.to_rgb(kelvin)
+  def temperature(%Color{} = color), do: Temperature.from_rgb(color)
 
   def hex(%Color{r: r, g: g, b: b, a: 1.0}) do
     [r, g, b]
