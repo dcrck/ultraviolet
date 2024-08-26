@@ -18,6 +18,11 @@ defmodule Ultraviolet.Color do
   - OKLab: `:oklab`
   - OKLCH: `:oklch`
 
+  ### To add
+
+  - GL (RGBA normalized to `0..1`)
+  - CMYK
+
   """
   import Bitwise, only: [bsr: 2, band: 2]
 
