@@ -38,10 +38,10 @@ defmodule Ultraviolet.Color.Lab do
     "kK" => D.div(D.new("24389"), D.new("27")),
   }
 
-  defguardp is_normalized(n) when (is_float(n) and n >= 0 and n <= 1) or n == 0 or n == 1
+  defguardp is_normalized(n) when is_number(n) and n >= 0 and n <= 1
 
   @doc"""
-  Generates a new CIE Lab color object
+  Generates a new CIE Lab color
   """
   def new(l, a_star, b_star), do: new(l, a_star, b_star, 1.0)
 
@@ -50,7 +50,7 @@ defmodule Ultraviolet.Color.Lab do
   end
 
   @doc """
-  Converts from CIE Lab to an RGB Color struct
+  Converts from CIE Lab to sRGB
   
   ## Options
 

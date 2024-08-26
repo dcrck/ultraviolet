@@ -15,11 +15,12 @@ defmodule Ultraviolet.Color do
   - HSL: `:hsl`
   - CIE Lab: `:lab`
   - LCH: `:lch`
+  - OKLab: `:oklab`
 
   """
   import Bitwise, only: [bsr: 2, band: 2]
 
-  alias Ultraviolet.Color.{HSL, HSV, Lab, LCH}
+  alias Ultraviolet.Color.{HSL, HSV, Lab, LCH, OKLab}
   alias __MODULE__
 
   @me __MODULE__
@@ -116,6 +117,15 @@ defmodule Ultraviolet.Color do
       iex>Ultraviolet.Color.new(130, 40, 80, :hcl)
       {:ok, %Ultraviolet.Color{r: 170, g: 210, b: 140, a: 1.0}}
 
+  #### OKLab
+
+      iex>Ultraviolet.Color.new(0.4, -0.2, 0.5, :oklab)
+      {:ok, %Ultraviolet.Color{r: 98, g: 68, b: 0, a: 1.0}}
+      iex>Ultraviolet.Color.new(0.5, -0.2, 0.5, :oklab)
+      {:ok, %Ultraviolet.Color{r: 128, g: 97, b: 0, a: 1.0}}
+      iex>Ultraviolet.Color.new(0.8, -0.2, 0.5, :oklab)
+      {:ok, %Ultraviolet.Color{r: 217, g: 197, b: 0, a: 1.0}}
+
   """
   for line <- File.stream!(named_colors_path, [], :line) do
     [name, hex] = line |> String.split(" ") |> Enum.map(&String.trim/1)
@@ -190,6 +200,7 @@ defmodule Ultraviolet.Color do
   def new(l, a, b, :lab), do: new(l, a, b, 1.0, :lab, [])
   def new(l, c, h, :lch), do: new(l, c, h, 1.0, :lch, [])
   def new(h, c, l, :hcl), do: new(l, c, h, 1.0, :lch, [])
+  def new(l, a, b, :oklab), do: new(l, a, b, 1.0, :oklab, [])
 
   def new(r, g, b, a), do: new(r, g, b, a, :rgb)
 
@@ -213,9 +224,14 @@ defmodule Ultraviolet.Color do
   end
 
   def new(l, a_star, b_star, a, :lab), do: new(l, a_star, b_star, a, :lab, [])
+  def new(l, a_star, b_star, a, :oklab), do: new(l, a_star, b_star, a, :oklab, [])
 
   def new(l, a_star, b_star, :lab, options) when is_list(options) do
     new(l, a_star, b_star, 1.0, :lab, options)
+  end
+
+  def new(l, a_star, b_star, :oklab, options) when is_list(options) do
+    new(l, a_star, b_star, 1.0, :oklab, options)
   end
 
   def new(l, c, h, a, :lch), do: new(l, c, h, a, :lch, [])
@@ -235,6 +251,11 @@ defmodule Ultraviolet.Color do
   def new(l, a_star, b_star, a, :lab, options) when is_list(options) do
     {:ok, lab} = Lab.new(l, a_star, b_star, a)
     Lab.to_rgb(lab, options)
+  end
+
+  def new(l, a_star, b_star, a, :oklab, options) when is_list(options) do
+    {:ok, lab} = OKLab.new(l, a_star, b_star, a)
+    OKLab.to_rgb(lab, options)
   end
 
   def new(l, c, h, a, :lch, options) when is_list(options) do
@@ -296,16 +317,28 @@ defmodule Ultraviolet.Color do
       iex> Ultraviolet.Color.into(color, :hcl, round: 0)
       {:ok, %Ultraviolet.Color.LCH{l: 80, c: 40, h: 130}}
 
+  ### OKLab
+
+      iex>{:ok, color} = Ultraviolet.Color.new("#d9c500")
+      {:ok, %Ultraviolet.Color{r: 217, g: 197, b: 0, a: 1.0}}
+      iex> Ultraviolet.Color.into(color, :oklab, round: 2)
+      {:ok, %Ultraviolet.Color.OKLab{l: 0.81, a_star: -0.04, b_star: 0.17}}
+
   """
   def into(%Color{} = color, :hsl), do: HSL.from_rgb(color)
   def into(%Color{} = color, :hsv), do: HSV.from_rgb(color)
 
   def into(%Color{} = color, :lab), do: into(color, :lab, [])
+  def into(%Color{} = color, :oklab), do: into(color, :oklab, [])
   def into(%Color{} = color, :hcl), do: into(color, :hcl, [])
   def into(%Color{} = color, :lch), do: into(color, :hcl, [])
 
   def into(%Color{} = color, :lab, options) when is_list(options) do
     Lab.from_rgb(color, options)
+  end
+
+  def into(%Color{} = color, :oklab, options) when is_list(options) do
+    OKLab.from_rgb(color, options)
   end
 
   def into(%Color{} = color, lch_or_hcl, options)

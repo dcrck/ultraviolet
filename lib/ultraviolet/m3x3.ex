@@ -20,6 +20,17 @@ defmodule Ultraviolet.M3x3 do
   end
 
   @doc """
+  Transposes matrix `m`
+  """
+  def t(%M3x3{} = m) do
+    %M3x3{
+      m00: m.m00, m01: m.m10, m02: m.m20,
+      m10: m.m01, m11: m.m11, m12: m.m21,
+      m20: m.m02, m21: m.m12, m22: m.m22,
+    }
+  end
+
+  @doc """
   Multiply a 1x3 row vector `[x, y, z]` by matrix `m`
 
   ```
