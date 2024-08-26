@@ -19,7 +19,7 @@ defmodule OKLCHTest do
   }
 
   for {name, {{r, g, b, a}, {l, c, h}}} <- cases do
-    test "converts #{name} from LCH to RGB properly" do
+    test "converts #{name} from OKLCH to RGB properly" do
       assert {:ok, color} = Color.new(unquote(r), unquote(g), unquote(b), unquote(a))
       assert {:ok, lab} = OKLCH.from_rgb(color, round: false)
       assert Float.round(lab.l, 3) == unquote(l)

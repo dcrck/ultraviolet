@@ -21,7 +21,7 @@ defmodule Ultraviolet.Color do
   """
   import Bitwise, only: [bsr: 2, band: 2]
 
-  alias Ultraviolet.Color.{HSL, HSV, Lab, LCH, OKLab, OKLCH}
+  alias Ultraviolet.Color.{HSL, HSV, Lab, LCH, OKLab, OKLCH, Temperature}
   alias __MODULE__
 
   @me __MODULE__
@@ -365,6 +365,20 @@ defmodule Ultraviolet.Color do
   when is_list(options) and lch_or_hcl in [:hcl, :lch] do
     LCH.from_rgb(color, options)
   end
+
+  @doc """
+  Converts a temperature into a color, based on the color temperature scale.
+
+  ## Examples
+
+      iex>Ultraviolet.Color.temperature(2000)
+      {:ok, %Ultraviolet.Color{r: 255, g: 139, b: 20, a: 1.0}}
+      iex>Ultraviolet.Color.temperature(3500)
+      {:ok, %Ultraviolet.Color{r: 255, g: 195, b: 138, a: 1.0}}
+      iex>Ultraviolet.Color.temperature(6500)
+      {:ok, %Ultraviolet.Color{r: 255, g: 250, b: 254, a: 1.0}}
+  """
+  def temperature(kelvin), do: Temperature.to_rgb(kelvin)
 
   def hex(%Color{r: r, g: g, b: b, a: 1.0}) do
     [r, g, b]
