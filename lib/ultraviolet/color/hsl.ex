@@ -9,7 +9,7 @@ defmodule Ultraviolet.Color.HSL do
 
   @me __MODULE__
 
-  defguardp is_hue(h) when is_integer(h) and h >= 0 and h <= 360
+  defguardp is_hue(h) when is_number(h) and h >= 0 and h <= 360
   defguardp is_normalized(n) when is_number(n) and n >= 0 and n <= 1
 
   @doc """
@@ -32,7 +32,7 @@ defmodule Ultraviolet.Color.HSL do
   # achromatic case, e.g. gray
   def to_rgb(%HSL{s: s} = hsl) when s == 0 do
     lum = round(hsl.l * 255)
-    {:ok, struct(Color, r: lum, g: lum, b: lum, a: hsl.a)}
+    Color.new(lum, lum, lum, hsl.a)
   end
 
   def to_rgb(%HSL{l: l, s: s} = hsl) when l < 0.5 do
@@ -46,13 +46,12 @@ defmodule Ultraviolet.Color.HSL do
   defp convert_to_rgb(hsl, q) do
     h = hsl.h / 360
     p = 2 * hsl.l - q
-    rgb_options = [
-      r: round(hue_to_rgb(p, q, h + 1/3) * 255),
-      g: round(hue_to_rgb(p, q, h) * 255),
-      b: round(hue_to_rgb(p, q, h - 1/3) * 255),
-      a: hsl.a,
-    ]
-    {:ok, struct(Color, rgb_options)}
+    Color.new(
+      round(hue_to_rgb(p, q, h + 1/3) * 255),
+      round(hue_to_rgb(p, q, h) * 255),
+      round(hue_to_rgb(p, q, h - 1/3) * 255),
+      hsl.a
+    )
   end
 
   defp hue_to_rgb(p, q, t) when t < 0, do: hue_to_rgb(p, q, t + 1)
@@ -72,15 +71,12 @@ defmodule Ultraviolet.Color.HSL do
     v = Enum.max(normalized)
     d = v - Enum.min(normalized)
     f = 1 - abs(v + v - d - 1)
-    {
-      :ok,
-      %HSL{
-        h: round(60 * maybe_correct_hue(hue(normalized, v, d))),
-        s: saturation(d, f),
-        l: (v + v - d) / 2,
-        a: a,
-      }
-    }
+    new(
+      round(60 * maybe_correct_hue(hue(normalized, v, d))),
+      saturation(d, f),
+      (v + v - d) / 2,
+      a
+    )
   end
 
   defp saturation(_d, f) when f == 0, do: 0.0

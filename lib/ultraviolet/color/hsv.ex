@@ -10,7 +10,7 @@ defmodule Ultraviolet.Color.HSV do
 
   @me __MODULE__
   
-  defguardp is_hue(h) when is_integer(h) and h >= 0 and h <= 360
+  defguardp is_hue(h) when is_number(h) and h >= 0 and h <= 360
   defguardp is_normalized(n) when is_number(n) and n >= 0 and n <= 1
 
   def new(h, s, v), do: new(h, s, v, 1.0)
@@ -27,12 +27,14 @@ defmodule Ultraviolet.Color.HSV do
   """
   def to_rgb(%HSV{s: s, v: v, h: h, a: a}) when (s == 0 and v == 1) or v == 0 do
     l = v * (1 - s / 2)
-    HSL.to_rgb(%HSL{h: h, s: 0, l: l, a: a})
+    {:ok, hsl} = HSL.new(h, 0, l, a)
+    HSL.to_rgb(hsl)
   end
 
   def to_rgb(%HSV{h: h, s: s, v: v, a: a}) do
     l = v * (1 - s / 2)
-    HSL.to_rgb(%HSL{h: h, s: (v - l) / min(l, 1 - l), l: l, a: a})
+    {:ok, hsl} = HSL.new(h, (v - l) / min(l, 1 - l), l, a)
+    HSL.to_rgb(hsl)
   end
 
   @doc """
@@ -44,10 +46,10 @@ defmodule Ultraviolet.Color.HSV do
   end
 
   defp hsl_to_hsv(%HSL{h: h, a: a}, v) when v == 0 do
-    {:ok, %HSV{h: h, s: 0, v: 0, a: a}}
+    new(h, 0, 0, a)
   end
 
   defp hsl_to_hsv(%{h: h, a: a, l: l}, v) do
-    {:ok, %HSV{h: h, s: 2 * (1 - l / v), v: v, a: a}}
+    new(h, 2 * (1 - l / v), v, a)
   end
 end

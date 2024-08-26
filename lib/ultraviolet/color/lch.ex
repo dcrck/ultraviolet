@@ -10,7 +10,7 @@ defmodule Ultraviolet.Color.LCH do
 
   @me __MODULE__
 
-  defguardp is_hue(h) when is_integer(h) and h >= 0 and h <= 360
+  defguardp is_hue(h) when is_number(h) and h >= 0 and h <= 360
   defguardp is_normalized(n) when is_number(n) and n >= 0 and n <= 1
 
   def new(l, c, h), do: new(l, c, h, 1.0)
@@ -73,7 +73,7 @@ defmodule Ultraviolet.Color.LCH do
 
     [lab.l, c, h]
     |> Enum.map(&maybe_round(&1, round))
-    |> then(fn [l, c, h] -> {:ok, %LCH{l: l, c: c, h: h, a: lab.a}} end)
+    |> then(fn [l, c, h] -> new(l, c, h, lab.a) end)
   end
 
   # simple floating-point modulus

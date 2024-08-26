@@ -69,9 +69,7 @@ defmodule Ultraviolet.Color.Lab do
     |> Enum.map(&(&1 * 255))
     |> Enum.map(&clamp_to_byte/1)
     |> Enum.map(&maybe_round(&1, round))
-    |> then(fn [r, g, b] ->
-      {:ok, %Color{r: r, g: g, b: b, a: lab.a}}
-    end)
+    |> then(fn [r, g, b] -> Color.new(r, g, b, lab.a) end)
   end
 
   @doc """
@@ -92,9 +90,7 @@ defmodule Ultraviolet.Color.Lab do
     xyz
     |> xyz_to_lab(Tuple.to_list(whitepoint))
     |> Enum.map(&maybe_round(&1, round))
-    |> then(fn [l, a, b] ->
-      {:ok, %Lab{l: l, a_star: a, b_star: b, a: color.a}}
-    end)
+    |> then(fn [l, a, b] -> Lab.new(l, a, b, color.a) end)
   end
 
   defp maybe_round(channel, 0), do: round(channel)

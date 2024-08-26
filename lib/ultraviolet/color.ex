@@ -34,8 +34,8 @@ defmodule Ultraviolet.Color do
   defstruct r: 0, g: 0, b: 0, a: 1.0
 
   # shortcut for checking valid rgba values
-  defguardp is_byte(n) when is_integer(n) and n >= 0 and n <= 255
-  defguardp is_normalized(n) when (is_float(n) and n >= 0 and n <= 1) or n == 0 or n == 1
+  defguardp is_byte(n) when is_number(n) and n >= 0 and n <= 255
+  defguardp is_normalized(n) when is_number(n) and n >= 0 and n <= 1
 
   # source of named colors
   @external_resource named_colors_path = Path.join([__DIR__, "named-colors.txt"])

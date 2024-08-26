@@ -12,7 +12,7 @@ defmodule Ultraviolet.Color.OKLCH do
   alias Ultraviolet.Color.OKLab
   alias __MODULE__
 
-  defguardp is_hue(h) when is_integer(h) and h >= 0 and h <= 360
+  defguardp is_hue(h) when is_number(h) and h >= 0 and h <= 360
   defguardp is_normalized(n) when is_number(n) and n >= 0 and n <= 1.00001
 
   def new(l, c, h), do: new(l, c, h, 1.0)
@@ -73,7 +73,7 @@ defmodule Ultraviolet.Color.OKLCH do
 
     [oklab.l, c, h]
     |> Enum.map(&maybe_round(&1, round))
-    |> then(fn [l, c, h] -> {:ok, %OKLCH{l: l, c: c, h: h, a: oklab.a}} end)
+    |> then(fn [l, c, h] -> OKLCH.new(l, c, h, oklab.a) end)
   end
 
   # simple floating-point modulus

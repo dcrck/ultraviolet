@@ -83,7 +83,7 @@ defmodule Ultraviolet.Color.OKLab do
         |> Enum.map(&clamp_to_byte/1)
         # maybe round each value
         |> Enum.map(&maybe_round(&1, round))
-        |> then(fn [r, g, b] -> {:ok, %Color{r: r, g: g, b: b, a: oklab.a}} end)
+        |> then(fn [r, g, b] -> Color.new(r, g, b, oklab.a) end)
 
       other ->
         other
@@ -111,9 +111,7 @@ defmodule Ultraviolet.Color.OKLab do
     |> M3x3.mult(M3x3.t(@lms2oklab))
     # create OKLab struct
     |> Enum.map(&maybe_round(D.to_float(&1), round))
-    |> then(fn [l, a, b] ->
-      {:ok, %OKLab{l: l, a_star: a, b_star: b, a: color.a}}
-    end)
+    |> then(fn [l, a, b] -> new(l, a, b, color.a) end)
   end
 
   defp clamp_to_byte(n), do: min(max(n, 0), 255)
