@@ -266,6 +266,102 @@ defmodule Ultraviolet.Color do
   """
   def temperature(%Color{} = color), do: Temperature.from_rgb(color)
 
+  @doc"""
+  Get or set the color opacity.
+
+  ## Examples
+
+    iex> {:ok, color} = Color.new("red");
+    iex> color = Color.alpha(color, 0.5)
+    %Color{r: 255, g: 0, b: 0, a: 0.5}
+    iex> Color.alpha(color)
+    0.5
+  """
+  # this works because all Color structs use `:a` for opacity
+  def alpha(%{a: a} = color) when is_struct(color), do: a
+  def alpha(color, alpha) when is_struct(color) and is_normalized(alpha) do
+    %{color | a: alpha}
+  end
+
+  # operation step amount
+  @op_step 18
+
+  @doc """
+  Brighten a color.
+
+  ## Examples
+
+    iex> {:ok, color} = Color.new("hotpink");
+    iex> Color.hex(Color.brighten!(color))
+    "#ff9ce6"
+    iex> Color.hex(Color.brighten!(color, 2))
+    "#ffd1ff"
+    iex> Color.hex(Color.brighten!(color, 3))
+    "#ffffff"
+
+  """
+  def brighten!(%Color{} = color, amount \\ 1) do
+    color
+    |> into(:lab)
+    |> ok!()
+    |> Map.update!(:l_, &(&1 + @op_step * amount))
+    |> Lab.to_rgb(round: false)
+    |> ok!()
+  end
+
+  @doc """
+  Darken a color.
+
+  ## Examples
+
+    iex> {:ok, color} = Color.new("hotpink");
+    iex> Color.hex(Color.darken!(color))
+    "#c93384"
+    iex> Color.hex(Color.darken!(color, 2))
+    "#940058"
+    iex> Color.hex(Color.darken!(color, 2.6))
+    "#74003f"
+
+  """
+  def darken!(%Color{} = color, amount \\ 1), do: brighten!(color, -amount)
+
+  @doc """
+  Increases the saturation of a color by manipulating the Lch chromaticity.
+
+  ## Examples
+
+    iex> {:ok, color} = Color.new("slategray");
+    iex> Color.hex(Color.saturate!(color))
+    "#4b83ae"
+    iex> Color.hex(Color.saturate!(color, 2))
+    "#0087cd"
+    iex> Color.hex(Color.saturate!(color, 3))
+    "#008bec"
+  """
+  def saturate!(%Color{} = color, amount \\ 1) do
+    color
+    |> into(:lch)
+    |> ok!()
+    |> Map.update!(:c, &(&1 + @op_step * amount))
+    |> LCH.to_rgb(round: false)
+    |> ok!()
+  end
+
+  @doc """
+  Decreases the saturation of a color by manipulating the Lch chromaticity.
+
+  ## Examples
+
+    iex> {:ok, color} = Color.new("hotpink");
+    iex> Color.hex(Color.desaturate!(color))
+    "#e77dae"
+    iex> Color.hex(Color.desaturate!(color, 2))
+    "#cd8ca8"
+    iex> Color.hex(Color.desaturate!(color, 3))
+    "#b199a3"
+  """
+  def desaturate!(%Color{} = color, amount \\ 1), do: saturate!(color, -amount)
+
   def hex(%Color{r: r, g: g, b: b, a: 1.0}) do
     [r, g, b]
     |> Enum.map(&to_hex/1)
@@ -283,6 +379,12 @@ defmodule Ultraviolet.Color do
   defp to_hex(value) when is_float(value), do: to_hex(round(value))
   defp to_hex(value) when value < 16, do: "0" <> Integer.to_string(value, 16)
   defp to_hex(value), do: Integer.to_string(value, 16)
+
+  # shorthand to deconstruct {:ok, result} structs
+  defp ok!({:ok, result}), do: result
+  defp ok!(other) do
+    raise "expected a structure like {:ok, result}, got: #{inspect(other)}"
+  end
 end
 
 defimpl String.Chars, for: Ultraviolet.Color do
