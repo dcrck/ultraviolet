@@ -102,9 +102,35 @@ defmodule Ultraviolet.Color do
     {:ok, struct(@me, r: r, g: g, b: b)}
   end
 
+  # already a Color
   def new(%Color{} = c), do: {:ok, c}
 
   def new(_), do: {:error, :invalid}
+
+  # map + mode
+  def new(%{r: r, g: g, b: b} = rgb, mode) when mode in [:rgb, :lrgb] do
+    new(r, g, b, alpha: Map.get(rgb, :a, 1.0), mode: :rgb)
+  end
+
+  def new(%{l_: l, a_: a, b_: b} = lab, mode) when mode in [:lab, :oklab] do
+    new(l, a, b, alpha: Map.get(lab, :a, 1.0), mode: mode)
+  end
+
+  def new(%{l: l, c: c, h: h} = lch, mode) when mode in [:oklch, :lch] do
+    new(l, c, h, alpha: Map.get(lch, :a, 1.0), mode: mode)
+  end
+
+  def new(%{l: l, c: c, h: h} = hcl, :hcl) do
+    new(h, c, l, alpha: Map.get(hcl, :a, 1.0), mode: :hcl)
+  end
+
+  def new(%{v: v, s: s, h: h} = hsv, :hsv) do
+    new(h, s, v, alpha: Map.get(hsv, :a, 1.0), mode: :hsv)
+  end
+
+  def new(%{l: l, s: s, h: h} = hsl, :hsl) do
+    new(h, s, l, alpha: Map.get(hsl, :a, 1.0), mode: :hsl)
+  end
 
   def new(p1, p2, p3, options \\ [])
 
@@ -126,7 +152,7 @@ defmodule Ultraviolet.Color do
 
   def new(r, g, b, a, :rgb, _options)
   when is_normalized(a) and is_byte(r) and is_byte(g) and is_byte(b) do
-    {:ok, struct(@me, r: r, g: g, b: b)}
+    {:ok, struct(@me, r: r, g: g, b: b, a: a)}
   end
 
   def new(h, s, l, a, :hsl, _options) do
@@ -227,6 +253,9 @@ defmodule Ultraviolet.Color do
   """
   def into(color, mode, options \\ [])
 
+  def into(%Color{} = color, rgb, _options) when rgb in [:rgb, :lrgb] do
+    {:ok, color}
+  end
   def into(%Color{} = color, :hsl, _options), do: HSL.from_rgb(color)
   def into(%Color{} = color, :hsv, _options), do: HSV.from_rgb(color)
 
@@ -405,142 +434,110 @@ defmodule Ultraviolet.Color do
     |> ok!()
   end
   @doc """
-  Mixes two colors. the mix `weight` is a value between 0 and 1
-  """
-  def mix(color1, color2, weight \\ 0.5, mode \\ :lrgb)
+  Mixes two colors. The mix `weight` is a value between 0 and 1.
 
-  def mix(color2, color2, w, _mode) when not is_normalized(w) do
+  See `Ultraviolet.mix/4` for documentation and examples.
+  """
+  def mix(color, target, weight \\ 0.5, mode \\ :lrgb)
+
+  def mix(_color, _target, w, _mode) when not is_normalized(w) do
     {:error, "expected a ratio between 0 and 1, got: #{w}"}
   end
 
-  def mix(%Color{} = col1, %Color{} = col2, w, :lrgb) do
-    [col1, col2]
-    # extract components from each
-    |> Enum.map(&[&1.r, &1.g, &1.b])
-    # pair channels
-    |> Enum.zip()
-    # mix each channel
-    |> Enum.map(fn {c1, c2} -> :math.sqrt(c1 * c1 * (1 - w) + c2 * c2 * w) end)
-    # create a new color from the mixed channels
-    |> then(fn [r, g, b] -> new(r, g, b, weighted_mix(col1.a, col2.a, w)) end)
+  def mix(color, target, w, mode) do
+    average(color, [target], mode, [1 - w, w])
   end
 
-  def mix(%Color{} = col1, %Color{} = col2, w, :rgb) do
-    [col1, col2]
-    # extract components from each
-    |> Enum.map(&[&1.r, &1.g, &1.b, &1.a])
-    # pair channels
-    |> Enum.zip()
-    # mix each channel
-    |> Enum.map(fn {c1, c2} -> weighted_mix(c1, c2, w) end)
-    # create a new color from the mixed channels
-    |> then(fn [r, g, b, a] -> new(r, g, b, a) end)
+  @doc """
+  Mixes several colors. If `weights` are given, a weighted average is
+  calculated; the number of `weights` must equal the number of colors.
+
+  See `Ultraviolet.average/4` for documentation and examples.
+  """
+  def average(color, targets, mode \\ :lrgb, weights \\ nil)
+
+  def average(color, targets, mode, nil) do
+    average(color, targets, mode, Enum.map([color | targets], fn _ -> 1 end))
   end
 
-  def mix(%Color{} = col1, %Color{} = col2, w, :hsl) do
-    {:ok, hsl1} = into(col1, :hsl)
-    {:ok, hsl2} = into(col2, :hsl)
-
-    new(
-      maybe_correct_hue(hsl1.h + w * hue_difference(hsl1.h, hsl2.h)),
-      weighted_mix(hsl1.s, hsl2.s, w),
-      weighted_mix(hsl1.l, hsl2.l, w),
-      weighted_mix(hsl1.a, hsl2.a, w),
-      :hsl
-    )
-  end
-
-  def mix(%Color{} = col1, %Color{} = col2, w, :hsv) do
-    {:ok, hsv1} = into(col1, :hsv)
-    {:ok, hsv2} = into(col2, :hsv)
-
-    new(
-      maybe_correct_hue(hsv1.h + w * hue_difference(hsv1.h, hsv2.h)),
-      weighted_mix(hsv1.s, hsv2.s, w),
-      weighted_mix(hsv1.v, hsv2.v, w),
-      weighted_mix(hsv1.a, hsv2.a, w),
-      :hcl
-    )
-  end
-
-  def mix(%Color{} = col1, %Color{} = col2, w, :lab) do
-    {:ok, lab1} = into(col1, :lab)
-    {:ok, lab2} = into(col2, :lab)
-
-    [lab1, lab2]
-    # extract components from each
-    |> Enum.map(&[&1.l_, &1.a_, &1.b_, &1.a])
-    # pair channels
-    |> Enum.zip()
-    # mix each channel
-    |> Enum.map(fn {c1, c2} -> weighted_mix(c1, c2, w) end)
-    # create a new color from the mixed channels
-    |> then(fn [l, a, b, alpha] -> new(l, a, b, alpha, :lab) end)
-  end
-
-  def mix(%Color{} = col1, %Color{} = col2, w, :oklab) do
-    {:ok, lab1} = into(col1, :oklab)
-    {:ok, lab2} = into(col2, :oklab)
-
-    [lab1, lab2]
-    # extract components from each
-    |> Enum.map(&[&1.l_, &1.a_, &1.b_, &1.a])
-    # pair channels
-    |> Enum.zip()
-    # mix each channel
-    |> Enum.map(fn {c1, c2} -> weighted_mix(c1, c2, w) end)
-    # create a new color from the mixed channels
-    |> then(fn [l, a, b, alpha] -> new(l, a, b, alpha, :oklab) end)
-  end
-
-  def mix(%Color{} = c1, %Color{} = c2, w, :lch), do: mix(c1, c2, w, :hcl)
-
-  def mix(%Color{} = col1, %Color{} = col2, w, :hcl) do
-    {:ok, hcl1} = into(col1, :hcl)
-    {:ok, hcl2} = into(col2, :hcl)
-
-    new(
-      maybe_correct_hue(hcl1.h + w * hue_difference(hcl1.h, hcl2.h)),
-      weighted_mix(hcl1.c, hcl2.c, w),
-      weighted_mix(hcl1.l, hcl2.l, w),
-      weighted_mix(hcl1.a, hcl2.a, w),
-      :hcl
-    )
-  end
-
-  def mix(%Color{} = col1, %Color{} = col2, w, :oklch) do
-    {:ok, oklch1} = into(col1, :oklch)
-    {:ok, oklch2} = into(col2, :oklch)
-
-    new(
-      weighted_mix(oklch1.l, oklch2.l, w),
-      weighted_mix(oklch1.c, oklch2.c, w),
-      maybe_correct_hue(oklch1.h + w * hue_difference(oklch1.h, oklch2.h)),
-      weighted_mix(oklch1.a, oklch2.a, w),
-      :oklch
-    )
-  end
-
-  def mix(color1, color2, w, mode) do
-    case {new(color1), new(color2)} do
-      {{:ok, c1}, {:ok, c2}} -> mix(c1, c2, w, mode)
-      {{:ok, _c1}, _} -> {:error, "#{color2} is not a valid color"}
-      {_, {:ok, _c2}} -> {:error, "#{color1} is not a valid color"}
-      _ -> {:error, "#{color1} and #{color2} are not valid colors"}
+  def average(color, targets, mode, weights) do
+    with {:ok, color_list} <- validate_all([color | targets], &new/1),
+         {:ok, color_list} <- validate_all(color_list, &into(&1, mode)) do
+      color_list
+      |> Enum.map(&Map.from_struct/1)
+      |> Enum.zip_with(& &1)
+      |> Enum.map(&weighted_average(&1, normalize(weights), mode))
+      |> List.flatten()
+      |> Enum.reduce(%{}, fn {k, v}, m ->
+        Map.update(m, k, v, &tuple_sum(&1, v))
+      end)
+      |> Enum.map(&consolidate(&1, mode))
+      |> Enum.into(%{})
+      |> new(mode)
+    else
+      error -> error
     end
   end
 
-  defp weighted_mix(v1, v2, w), do: v1 + w * (v2 - v1)
-
-  defp hue_difference(hue1, hue2) when hue2 > hue1 and hue2 - hue1 > 180 do
-    hue2 - (hue1 + 360)
+  defp validate_all(list, condition) do
+    list
+    |> Enum.map(condition)
+    |> Enum.reduce_while([], fn
+      {:ok, item}, acc -> {:cont, [item | acc]}
+      error, _ -> {:halt, error}
+    end)
+    |> case do
+      l when is_list(l) -> {:ok, l}
+      error -> error
+    end
   end
 
-  defp hue_difference(hue1, hue2) when hue2 < hue1 and hue1 - hue2 > 180 do
-    hue2 + 360 - hue1
+  defp normalize(values) do
+    values
+    |> Enum.sum()
+    |> then(&Enum.map(values, fn v -> v / &1 end))
   end
 
-  defp hue_difference(hue1, hue2), do: hue2 - hue1
+  defp weighted_average(components, weights, mode) do
+    components
+    |> Enum.zip(weights)
+    |> Enum.map(&channel_with_weight(&1, mode))
+  end
+
+  # alpha channel is always a simple weighted average
+  defp channel_with_weight({{:a, value}, weight}, _mode) do
+    {:a, weight * value}
+  end
+
+  defp channel_with_weight({{channel, value}, weight}, :lrgb) do
+    {channel, weight * value * value}
+  end
+
+  # since hues are angles, we need to use a different weighted average
+  defp channel_with_weight({{:h, degrees}, weight}, _mode) do
+    radians = degrees * :math.pi() / 180
+    {:h, {:math.cos(radians) * weight, :math.sin(radians) * weight}}
+  end
+
+  defp channel_with_weight({{channel, value}, weight}, _mode) do
+    {channel, weight * value}
+  end
+
+  # required because sometimes the weighted average returns a tuple
+  # the tuple will be resolved during `consolidate/2`
+  defp tuple_sum({v1, w1}, {v2, w2}), do: {v1 + v2, w1 + w2}
+  defp tuple_sum(v1, v2), do: v1 + v2
+
+  # the final step...
+  # alpha channel is always a simple weighted average
+  defp consolidate({:a, v}, _mode), do: {:a, v}
+  defp consolidate({k, v}, :lrgb), do: {k, :math.sqrt(v)}
+
+  defp consolidate({:h, {cos, sin}}, _mode) do
+    {:h, maybe_correct_hue(:math.atan2(sin, cos) * 180 / :math.pi())}
+  end
+
+  defp consolidate({k, v}, _mode), do: {k, v}
 
   defp maybe_correct_hue(h) when h < 0, do: maybe_correct_hue(h + 360)
   defp maybe_correct_hue(h) when h > 360, do: maybe_correct_hue(h - 360)

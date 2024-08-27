@@ -247,7 +247,47 @@ defmodule Ultraviolet do
     iex>Ultraviolet.Color.hex(mixed)
     "#fa0080"
   """
-  def mix(color1, color2, ratio \\ 0.5, mode \\ :lrgb) do
-    Color.mix(color1, color2, ratio, mode)
+  def mix(color, target, ratio \\ 0.5, mode \\ :lrgb) do
+    Color.mix(color, target, ratio, mode)
+  end
+
+  @doc """
+  Similar to `mix/4`, but accepts more than two colors. Simple averaging
+  of the R,G,B components and the alpha channel.
+
+  ## Examples
+
+    iex> colors = ["ddd", "yellow", "red", "teal"];
+    iex>{:ok, color} = Ultraviolet.average(colors);
+    iex>Ultraviolet.Color.hex(color)
+    "#d3b480"
+    iex>{:ok, color} = Ultraviolet.average(colors, :rgb);
+    iex>Ultraviolet.Color.hex(color)
+    "#b79757"
+    iex>{:ok, color} = Ultraviolet.average(colors, :lab);
+    iex>Ultraviolet.Color.hex(color)
+    "#d3a96a"
+    iex>{:ok, color} = Ultraviolet.average(colors, :lch);
+    iex>Ultraviolet.Color.hex(color)
+    "#ef9e4e"
+
+  Also works with alpha channels
+
+    iex>{:ok, color} = Ultraviolet.average(["red", %Ultraviolet.Color{r: 0, g: 0, b: 0, a: 0.0}])
+    iex>Ultraviolet.Color.hex(color)
+    "#b4000080"
+
+  You can also provide an array of weights to compute a weighted average:
+
+    iex> colors = ["ddd", "yellow", "red", "teal"];
+    iex>{:ok, color} = Ultraviolet.average(colors, :lch, [1, 1, 2, 1]);
+    iex>Ultraviolet.Color.hex(color)
+    "#f98841"
+    iex>{:ok, color} = Ultraviolet.average(colors, :lch, [1.5, 0.5, 1, 2.3]);
+    iex>Ultraviolet.Color.hex(color)
+    "#ae9e52"
+  """
+  def average([color | targets], mode \\ :lrgb, weights \\ nil) do
+    Color.average(color, targets, mode, weights)
   end
 end
