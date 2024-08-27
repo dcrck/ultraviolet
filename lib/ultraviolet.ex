@@ -214,4 +214,39 @@ defmodule Ultraviolet do
 
   """
   defdelegate temperature(kelvin), to: Color.Temperature, as: :to_rgb
+
+  @doc """
+  Mixes two colors. the mix `ratio` is a value between 0 and 1
+
+  ## Examples
+
+    iex>{:ok, mixed} = Ultraviolet.mix("red", "blue");
+    iex>Ultraviolet.Color.hex(mixed)
+    "#b400b4"
+    iex>{:ok, mixed} = Ultraviolet.mix("red", "blue", 0.25);
+    iex>Ultraviolet.Color.hex(mixed)
+    "#dd0080"
+    iex>{:ok, mixed} = Ultraviolet.mix("red", "blue", 0.75);
+    iex>Ultraviolet.Color.hex(mixed)
+    "#8000dd"
+
+  The color mixing produces different results based on the color space used for
+  interpolation (default: `:lrgb`).
+
+    iex>{:ok, mixed} = Ultraviolet.mix("red", "blue", 0.5, :rgb);
+    iex>Ultraviolet.Color.hex(mixed)
+    "#800080"
+    iex>{:ok, mixed} = Ultraviolet.mix("red", "blue", 0.5, :hsl);
+    iex>Ultraviolet.Color.hex(mixed)
+    "#ff00ff"
+    iex>{:ok, mixed} = Ultraviolet.mix("red", "blue", 0.5, :lab);
+    iex>Ultraviolet.Color.hex(mixed)
+    "#ca0089"
+    iex>{:ok, mixed} = Ultraviolet.mix("red", "blue", 0.5, :lch);
+    iex>Ultraviolet.Color.hex(mixed)
+    "#fa0080"
+  """
+  def mix(color1, color2, ratio \\ 0.5, mode \\ :lrgb) do
+    Color.mix(color1, color2, ratio, mode)
+  end
 end

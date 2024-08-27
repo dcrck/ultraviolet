@@ -102,6 +102,8 @@ defmodule Ultraviolet.Color do
     {:ok, struct(@me, r: r, g: g, b: b)}
   end
 
+  def new(%Color{} = c), do: {:ok, c}
+
   def new(_), do: {:error, :invalid}
 
   def new(p1, p2, p3, options \\ [])
@@ -361,6 +363,148 @@ defmodule Ultraviolet.Color do
     "#b199a3"
   """
   def desaturate!(%Color{} = color, amount \\ 1), do: saturate!(color, -amount)
+
+  @doc """
+  Mixes two colors. the mix `weight` is a value between 0 and 1
+  """
+  def mix(color1, color2, weight \\ 0.5, mode \\ :lrgb)
+
+  def mix(color2, color2, w, _mode) when not is_normalized(w) do
+    {:error, "expected a ratio between 0 and 1, got: #{w}"}
+  end
+
+  def mix(%Color{} = col1, %Color{} = col2, w, :lrgb) do
+    [col1, col2]
+    # extract components from each
+    |> Enum.map(&[&1.r, &1.g, &1.b])
+    # pair channels
+    |> Enum.zip()
+    # mix each channel
+    |> Enum.map(fn {c1, c2} -> :math.sqrt(c1 * c1 * (1 - w) + c2 * c2 * w) end)
+    # create a new color from the mixed channels
+    |> then(fn [r, g, b] -> new(r, g, b, weighted_mix(col1.a, col2.a, w)) end)
+  end
+
+  def mix(%Color{} = col1, %Color{} = col2, w, :rgb) do
+    [col1, col2]
+    # extract components from each
+    |> Enum.map(&[&1.r, &1.g, &1.b, &1.a])
+    # pair channels
+    |> Enum.zip()
+    # mix each channel
+    |> Enum.map(fn {c1, c2} -> weighted_mix(c1, c2, w) end)
+    # create a new color from the mixed channels
+    |> then(fn [r, g, b, a] -> new(r, g, b, a) end)
+  end
+
+  def mix(%Color{} = col1, %Color{} = col2, w, :hsl) do
+    {:ok, hsl1} = into(col1, :hsl)
+    {:ok, hsl2} = into(col2, :hsl)
+
+    new(
+      maybe_correct_hue(hsl1.h + w * hue_difference(hsl1.h, hsl2.h)),
+      weighted_mix(hsl1.s, hsl2.s, w),
+      weighted_mix(hsl1.l, hsl2.l, w),
+      weighted_mix(hsl1.a, hsl2.a, w),
+      :hsl
+    )
+  end
+
+  def mix(%Color{} = col1, %Color{} = col2, w, :hsv) do
+    {:ok, hsv1} = into(col1, :hsv)
+    {:ok, hsv2} = into(col2, :hsv)
+
+    new(
+      maybe_correct_hue(hsv1.h + w * hue_difference(hsv1.h, hsv2.h)),
+      weighted_mix(hsv1.s, hsv2.s, w),
+      weighted_mix(hsv1.v, hsv2.v, w),
+      weighted_mix(hsv1.a, hsv2.a, w),
+      :hcl
+    )
+  end
+
+  def mix(%Color{} = col1, %Color{} = col2, w, :lab) do
+    {:ok, lab1} = into(col1, :lab)
+    {:ok, lab2} = into(col2, :lab)
+
+    [lab1, lab2]
+    # extract components from each
+    |> Enum.map(&[&1.l_, &1.a_, &1.b_, &1.a])
+    # pair channels
+    |> Enum.zip()
+    # mix each channel
+    |> Enum.map(fn {c1, c2} -> weighted_mix(c1, c2, w) end)
+    # create a new color from the mixed channels
+    |> then(fn [l, a, b, alpha] -> new(l, a, b, alpha, :lab) end)
+  end
+
+  def mix(%Color{} = col1, %Color{} = col2, w, :oklab) do
+    {:ok, lab1} = into(col1, :oklab)
+    {:ok, lab2} = into(col2, :oklab)
+
+    [lab1, lab2]
+    # extract components from each
+    |> Enum.map(&[&1.l_, &1.a_, &1.b_, &1.a])
+    # pair channels
+    |> Enum.zip()
+    # mix each channel
+    |> Enum.map(fn {c1, c2} -> weighted_mix(c1, c2, w) end)
+    # create a new color from the mixed channels
+    |> then(fn [l, a, b, alpha] -> new(l, a, b, alpha, :oklab) end)
+  end
+
+  def mix(%Color{} = c1, %Color{} = c2, w, :lch), do: mix(c1, c2, w, :hcl)
+
+  def mix(%Color{} = col1, %Color{} = col2, w, :hcl) do
+    {:ok, hcl1} = into(col1, :hcl)
+    {:ok, hcl2} = into(col2, :hcl)
+
+    new(
+      maybe_correct_hue(hcl1.h + w * hue_difference(hcl1.h, hcl2.h)),
+      weighted_mix(hcl1.c, hcl2.c, w),
+      weighted_mix(hcl1.l, hcl2.l, w),
+      weighted_mix(hcl1.a, hcl2.a, w),
+      :hcl
+    )
+  end
+
+  def mix(%Color{} = col1, %Color{} = col2, w, :oklch) do
+    {:ok, oklch1} = into(col1, :oklch)
+    {:ok, oklch2} = into(col2, :oklch)
+
+    new(
+      weighted_mix(oklch1.l, oklch2.l, w),
+      weighted_mix(oklch1.c, oklch2.c, w),
+      maybe_correct_hue(oklch1.h + w * hue_difference(oklch1.h, oklch2.h)),
+      weighted_mix(oklch1.a, oklch2.a, w),
+      :oklch
+    )
+  end
+
+  def mix(color1, color2, w, mode) do
+    case {new(color1), new(color2)} do
+      {{:ok, c1}, {:ok, c2}} -> mix(c1, c2, w, mode)
+      {{:ok, _c1}, _} -> {:error, "#{color2} is not a valid color"}
+      {_, {:ok, _c2}} -> {:error, "#{color1} is not a valid color"}
+      _ -> {:error, "#{color1} and #{color2} are not valid colors"}
+    end
+  end
+
+  defp weighted_mix(v1, v2, w), do: v1 + w * (v2 - v1)
+
+  defp hue_difference(hue1, hue2) when hue2 > hue1 and hue2 - hue1 > 180 do
+    hue2 - (hue1 + 360)
+  end
+
+  defp hue_difference(hue1, hue2) when hue2 < hue1 and hue1 - hue2 > 180 do
+    hue2 + 360 - hue1
+  end
+
+  defp hue_difference(hue1, hue2), do: hue2 - hue1
+
+  defp maybe_correct_hue(h) when h < 0, do: maybe_correct_hue(h + 360)
+  defp maybe_correct_hue(h) when h > 360, do: maybe_correct_hue(h - 360)
+  defp maybe_correct_hue(h), do: h
 
   def hex(%Color{r: r, g: g, b: b, a: 1.0}) do
     [r, g, b]
