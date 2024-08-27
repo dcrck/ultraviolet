@@ -364,6 +364,46 @@ defmodule Ultraviolet.Color do
   """
   def desaturate!(%Color{} = color, amount \\ 1), do: saturate!(color, -amount)
 
+
+  @doc """
+  Produces a shade of the given color. This is syntactic sugar for `mix/4`
+  with a target color of `black`.
+
+  ## Examples
+
+    iex>{:ok, color} = Color.new("hotpink");
+    iex> Color.hex(Color.shade!(color, 0.25))
+    "#dd5b9c"
+    iex> Color.hex(Color.shade!(color, 0.5))
+    "#b44a7f"
+    iex> Color.hex(Color.shade!(color, 0.75))
+    "#80355a"
+  """
+  def shade!(color, ratio \\ 0.5, mode \\ :lrgb) do
+    color
+    |> mix("black", ratio, mode)
+    |> ok!()
+  end
+
+  @doc """
+  Produces a tint of the given color. This is syntactic sugar for `mix/4`
+  with a target color of `white`.
+
+  ## Examples
+
+    iex>{:ok, color} = Color.new("hotpink");
+    iex> Color.hex(Color.tint!(color, 0.25))
+    "#ff9dc9"
+    iex> Color.hex(Color.tint!(color, 0.5))
+    "#ffc3dd"
+    iex> Color.hex(Color.tint!(color, 0.75))
+    "#ffe3ee"
+  """
+  def tint!(color, ratio \\ 0.5, mode \\ :lrgb) do
+    color
+    |> mix("white", ratio, mode)
+    |> ok!()
+  end
   @doc """
   Mixes two colors. the mix `weight` is a value between 0 and 1
   """

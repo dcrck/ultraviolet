@@ -1,7 +1,8 @@
 defmodule Ultraviolet do
   @moduledoc"""
-  Ultraviolet is a color manipulation library designed to closely mirror
-  `chroma-js`, except in Elixir.
+  Ultraviolet is a color manipulation library designed to function similarly to
+  `chroma-js`, except in Elixir. It may not have parity with `chroma-js`, but
+  it includes most of the common operations and features.
   """
   alias Ultraviolet.Color
 
