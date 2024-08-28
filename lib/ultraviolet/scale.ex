@@ -7,6 +7,17 @@ defmodule Ultraviolet.Scale do
 
   alias Ultraviolet.Color
 
+  defstruct [
+    colors: [%Color{r: 255, g: 255, b: 255}, %Color{}],
+    space: :rgb,
+    domain: [0, 1],
+    padding: [0, 0],
+    gamma: 1,
+    correct_lightness?: false,
+    classes: 0,
+    interpolation: :linear,
+  ]
+
   @doc """
   Creates a new color scale. See `Ultraviolet.scale/2` for details about
   creating scales.
@@ -40,7 +51,4 @@ defmodule Ultraviolet.Scale do
   """
   def take(_scale, xs) when is_list(xs), do: %{}
   def take(_scale, n) when is_integer(n) and n > 0, do: []
-
-  @doc """
-  """
 end

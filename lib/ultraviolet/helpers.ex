@@ -17,4 +17,25 @@ defmodule Ultraviolet.Helpers do
       error -> error
     end
   end
+
+  pattern = "\\s*(\\d+)\\s*"
+  @regex Regex.compile!("^#{pattern},#{pattern},#{pattern}\\)")
+
+  @doc """
+  Parses a CSS color in the format `rgb(0,0,0)` into a Color struct.
+
+  Required for `Ultraviolet.ColorBrewer` file.
+  """
+  def parse_css_color("rgb(" <> rest) do
+    case Regex.run(@regex, rest, capture: :all_but_first) do
+      [_, _, _] = list ->
+        list
+        |> Enum.map(&String.to_integer/1)
+        |> Ultraviolet.Color.new()
+      _ ->
+        {:error, :no_match}
+    end
+  end
+
+  def parse_css_color(_), do: {:error, :no_match}
 end

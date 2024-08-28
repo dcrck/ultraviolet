@@ -24,7 +24,8 @@ defmodule Ultraviolet.MixProject do
       {:ex_doc, "~> 0.34", only: :dev, runtime: false},
       # required for floating point math in LAB / LCH space
       {:decimal, "~> 2.0"},
-      # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
+      # only required to parse colorbrewer.json file
+      {:jason, "~> 1.4", optional: true, runtime: false},
     ]
   end
 end

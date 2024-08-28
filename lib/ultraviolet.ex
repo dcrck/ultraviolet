@@ -4,7 +4,7 @@ defmodule Ultraviolet do
   `chroma-js`, except in Elixir. It may not have parity with `chroma-js`, but
   it includes most of the common operations and features.
   """
-  alias Ultraviolet.{Color, Scale}
+  alias Ultraviolet.{Color, Scale, ColorBrewer}
   import Ultraviolet.Helpers
 
   @doc """
@@ -517,10 +517,29 @@ defmodule Ultraviolet do
   You can reverse the colors by reversing the domain:
 
     iex>{:ok, scale} = Ultraviolet.scale("YlGnBu", domain: [1, 0]);
+
+  ### Color Count
+
+  You can include a `:count` option when creating a ColorBrewer-based scale
+  to retrieve the Color Brewer palette with the given number of colors.
+  The default is `9`.
+
+    iex>{:ok, scale} = Ultraviolet.scale("YlGnBu", count: 5);
+
   """
-  def scale(colors, options \\ []) when is_list(options) and is_list(colors) do
+  def scale(colors \\ ["white", "black"], options \\ [])
+
+  def scale(colors, options) when is_list(options) and is_list(colors) do
     case validate_all(colors, &Color.new/1) do
-      {:ok, colors} -> Scale.new(colors)
+      {:ok, colors} -> Scale.new(colors, options)
+      error -> error
+    end
+  end
+
+  def scale(palette, options) when is_binary(palette) and is_list(options) do
+    {count, options} = Keyword.pop(options, :count, 9)
+    case ColorBrewer.colors(palette, count) do
+      {:ok, colors} -> Scale.new(colors, options)
       error -> error
     end
   end
