@@ -477,13 +477,35 @@ defmodule Ultraviolet do
 
   By default, the colors retrieved from the scale are the result of linear
   interpolation. If you want to change this, use the `:interpolation` option.
-  Right now, the only supported values are `:linear` and `:bezier`. The default
-  is `:linear.`
+
+  This option accepts a unary function (i.e. a function with one argument),
+  which will be called every time a color retrieval function is called on that
+  space. It should accept a number and return a `Ultraviolet.Color` or an
+  `{:ok, Ultraviolet.Color}` tuple.
+
+  There are also two builtin interpolation options: `:linear` for linear
+  interpolation (the default) and `:bezier` for Bezier interpolation.
 
     iex>{:ok, scale} = Ultraviolet.scale(
     ...>  ["yellow", "red", "black"],
     ...>  interpolation: :bezier
     ...>);
+
+  #### Example: `cubehelix`
+
+  Here's how you might use this option to implement Dave Green's
+  [cubehelix scheme](https://people.phy.cam.ac.uk/dag9/CUBEHELIX/):
+
+  TODO finish this example!
+
+    iex>params = %{start: 300, rotations: -1.5, hue: 1, gamma: 1, lightness: {0, 1}};
+    iex>cubehelix = fn _x ->
+    ...>  Color.new(0, 0, 0)
+    ...>end;
+    iex>{:ok, cubehelix} = Ultraviolet.scale(
+    ...>  ["black", "white"],
+    ...>  interpolation: &cubehelix/1
+    ...>)
 
   ## Color Brewer
 
