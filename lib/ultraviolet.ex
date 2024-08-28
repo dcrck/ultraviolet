@@ -5,6 +5,7 @@ defmodule Ultraviolet do
   it includes most of the common operations and features.
   """
   alias Ultraviolet.Color
+  import Ultraviolet.Helpers
 
   @doc """
   The first step to get your color into Ultraviolet is to create a
@@ -248,7 +249,10 @@ defmodule Ultraviolet do
     "#fa0080"
   """
   def mix(color, target, ratio \\ 0.5, mode \\ :lrgb) do
-    Color.mix(color, target, ratio, mode)
+    case validate_all([color, target], &Color.new/1) do
+      {:ok, [color, target]} -> Color.mix(color, target, ratio, mode)
+      error -> error
+    end
   end
 
   @doc """
@@ -287,7 +291,43 @@ defmodule Ultraviolet do
     iex>Ultraviolet.Color.hex(color)
     "#ae9e52"
   """
-  def average([color | targets], mode \\ :lrgb, weights \\ nil) do
-    Color.average(color, targets, mode, weights)
+  def average(colors, mode \\ :lrgb, weights \\ nil) do
+    case validate_all(colors, &Color.new/1) do
+      {:ok, [color | targets]} -> Color.average(color, targets, mode, weights)
+      error -> error
+    end
+  end
+
+  @doc """
+  Blends two colors using RGB channel-wise blend functions.
+
+  ## Valid Blend Modes
+
+  - `:multiply`
+  - `:darken`
+  - `:lighten`
+  - `:screen`
+  - `:overlay`
+  - `:burn`
+  - `:dodge`
+
+  ## Examples
+
+    iex>{:ok, color} = Ultraviolet.blend("4cbbfc", "eeee22", :multiply);
+    iex>Ultraviolet.Color.hex(color)
+    "#47af22"
+    iex>{:ok, color} = Ultraviolet.blend("4cbbfc", "eeee22", :darken);
+    iex>Ultraviolet.Color.hex(color)
+    "#4cbb22"
+    iex>{:ok, color} = Ultraviolet.blend("4cbbfc", "eeee22", :lighten);
+    iex>Ultraviolet.Color.hex(color)
+    "#eeeefc"
+
+  """
+  def blend(color, mask, mode) do
+    case validate_all([color, mask], &Color.new/1) do
+      {:ok, [color, mask]} -> Color.blend(color, mask, mode)
+      error -> error
+    end
   end
 end

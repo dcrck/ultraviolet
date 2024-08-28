@@ -25,6 +25,7 @@ defmodule Ultraviolet.Color do
 
   """
   import Bitwise, only: [bsr: 2, band: 2]
+  import Ultraviolet.Helpers
 
   alias Ultraviolet.Color.{HSL, HSV, Lab, LCH, OKLab, OKLCH, Temperature}
   alias __MODULE__
@@ -410,7 +411,7 @@ defmodule Ultraviolet.Color do
   """
   def shade!(color, ratio \\ 0.5, mode \\ :lrgb) do
     color
-    |> mix("black", ratio, mode)
+    |> mix(%Color{r: 0, g: 0, b: 0}, ratio, mode)
     |> ok!()
   end
 
@@ -430,7 +431,7 @@ defmodule Ultraviolet.Color do
   """
   def tint!(color, ratio \\ 0.5, mode \\ :lrgb) do
     color
-    |> mix("white", ratio, mode)
+    |> mix(%Color{r: 255, g: 255, b: 255}, ratio, mode)
     |> ok!()
   end
   @doc """
@@ -461,34 +462,22 @@ defmodule Ultraviolet.Color do
   end
 
   def average(color, targets, mode, weights) do
-    with {:ok, color_list} <- validate_all([color | targets], &new/1),
-         {:ok, color_list} <- validate_all(color_list, &into(&1, mode)) do
-      color_list
-      |> Enum.map(&Map.from_struct/1)
-      |> Enum.zip_with(& &1)
-      |> Enum.map(&weighted_average(&1, normalize(weights), mode))
-      |> List.flatten()
-      |> Enum.reduce(%{}, fn {k, v}, m ->
-        Map.update(m, k, v, &tuple_sum(&1, v))
-      end)
-      |> Enum.map(&consolidate(&1, mode))
-      |> Enum.into(%{})
-      |> new(mode)
-    else
-      error -> error
-    end
-  end
+    case validate_all([color | targets], &into(&1, mode)) do
+      {:ok, color_list} ->
+        color_list
+        |> Enum.map(&Map.from_struct/1)
+        |> Enum.zip_with(& &1)
+        |> Enum.map(&weighted_average(&1, normalize(weights), mode))
+        |> List.flatten()
+        |> Enum.reduce(%{}, fn {k, v}, m ->
+          Map.update(m, k, v, &tuple_sum(&1, v))
+        end)
+        |> Enum.map(&consolidate(&1, mode))
+        |> Enum.into(%{})
+        |> new(mode)
 
-  defp validate_all(list, condition) do
-    list
-    |> Enum.map(condition)
-    |> Enum.reduce_while([], fn
-      {:ok, item}, acc -> {:cont, [item | acc]}
-      error, _ -> {:halt, error}
-    end)
-    |> case do
-      l when is_list(l) -> {:ok, l}
-      error -> error
+      error ->
+        error
     end
   end
 
@@ -542,6 +531,53 @@ defmodule Ultraviolet.Color do
   defp maybe_correct_hue(h) when h < 0, do: maybe_correct_hue(h + 360)
   defp maybe_correct_hue(h) when h > 360, do: maybe_correct_hue(h - 360)
   defp maybe_correct_hue(h), do: h
+
+  @doc"""
+  Blends two colors using RGB channel-wise blend functions. See
+  `Ultraviolet.blend/3` for examples and valid blend modes.
+  """
+  def blend(color, mask, mode \\ :normal)
+
+  def blend(%Color{} = color, %Color{} = mask, mode) do
+    [color, mask]
+    |> Enum.map(&[&1.r, &1.g, &1.b])
+    |> Enum.zip()
+    |> Enum.map(&do_blend(&1, mode))
+    |> new()
+  end
+
+  def blend(_, _, _), do: {:error, :invalid}
+
+  defp do_blend({color, mask}, :multiply), do: color * mask / 255
+  defp do_blend({color, mask}, :darken), do: min(color, mask)
+  defp do_blend({color, mask}, :lighten), do: max(color, mask)
+
+  defp do_blend({color, mask}, :screen) do
+    255 * (1 - (1 - color / 255) * (1 - mask / 255))
+  end
+
+  defp do_blend({color, mask}, :overlay) when mask < 128 do
+    (2 * color * mask) / 255
+  end
+
+  defp do_blend({color, mask}, :overlay) do
+    255 * (1 - 2 * (1 - color / 255) * (1 - mask / 255))
+  end
+
+  defp do_blend({color, mask}, :burn) do
+    255 * (1 - (1 - mask / 255) / (color / 255))
+  end
+
+  defp do_blend({255, _mask}, :dodge), do: 255
+
+  defp do_blend({color, mask}, :dodge) do
+    case (255 * (mask / 255)) / (1 - color / 255) do
+      a when a <= 255 -> a
+      _ -> 255
+    end
+  end
+
+  defp do_blend({color, _}, _), do: color
 
   def hex(%Color{r: r, g: g, b: b, a: 1.0}) do
     [r, g, b]
