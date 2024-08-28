@@ -4,7 +4,7 @@ defmodule Ultraviolet do
   `chroma-js`, except in Elixir. It may not have parity with `chroma-js`, but
   it includes most of the common operations and features.
   """
-  alias Ultraviolet.Color
+  alias Ultraviolet.{Color, Scale}
   import Ultraviolet.Helpers
 
   @doc """
@@ -62,38 +62,53 @@ defmodule Ultraviolet do
   You can construct colors from different color spaces as well by passing an
   atom identifying the color space as the last argument.
 
+  The color space channels can either be passed in as arguments or as a map.
+
   #### HSL
 
     iex>Ultraviolet.new(330, 1, 0.6, :hsl)
+    {:ok, %Ultraviolet.Color{r: 255, g: 51, b: 153, a: 1.0}}
+    iex>Ultraviolet.new(%{h: 330, s: 1, l: 0.6}, :hsl)
     {:ok, %Ultraviolet.Color{r: 255, g: 51, b: 153, a: 1.0}}
 
   #### HSV
 
     iex>Ultraviolet.new(330, 0.8, 1, :hsv)
     {:ok, %Ultraviolet.Color{r: 255, g: 51, b: 153, a: 1.0}}
+    iex>Ultraviolet.new(%{h: 330, s: 0.8, v: 1}, :hsv)
+    {:ok, %Ultraviolet.Color{r: 255, g: 51, b: 153, a: 1.0}}
 
   #### Lab
 
     iex>Ultraviolet.new(40, -20, 50, :lab)
+    {:ok, %Ultraviolet.Color{r: 83, g: 102, b: 0, a: 1.0}}
+    iex>Ultraviolet.new(%{l_: 40, a_: -20, b_: 50}, :lab)
     {:ok, %Ultraviolet.Color{r: 83, g: 102, b: 0, a: 1.0}}
 
   #### LCH / HCL
 
     iex>Ultraviolet.new(80, 40, 130, :lch)
     {:ok, %Ultraviolet.Color{r: 170, g: 210, b: 140, a: 1.0}}
+    iex>Ultraviolet.new(%{l: 80, c: 40, h: 130}, :lch)
+    {:ok, %Ultraviolet.Color{r: 170, g: 210, b: 140, a: 1.0}}
 
   #### OKLab
 
     iex>Ultraviolet.new(0.4, -0.2, 0.5, :oklab)
+    {:ok, %Ultraviolet.Color{r: 98, g: 68, b: 0, a: 1.0}}
+    iex>Ultraviolet.new(%{l_: 0.4, a_: -0.2, b_: 0.5}, :oklab)
     {:ok, %Ultraviolet.Color{r: 98, g: 68, b: 0, a: 1.0}}
 
   #### OKLCH
 
     iex>Ultraviolet.new(0.5, 0.2, 240, :oklch)
     {:ok, %Ultraviolet.Color{r: 0, g: 105, b: 199, a: 1.0}}
+    iex>Ultraviolet.new(%{l: 0.5, c: 0.2, h: 240}, :oklch)
+    {:ok, %Ultraviolet.Color{r: 0, g: 105, b: 199, a: 1.0}}
 
   """
   defdelegate new(any), to: Color
+  defdelegate new(map, mode), to: Color
   defdelegate new(p1, p2, p3), to: Color
   defdelegate new(p1, p2, p3, p4), to: Color
   defdelegate new(p1, p2, p3, p4, p5), to: Color
@@ -247,10 +262,21 @@ defmodule Ultraviolet do
     iex>{:ok, mixed} = Ultraviolet.mix("red", "blue", 0.5, :lch);
     iex>Ultraviolet.Color.hex(mixed)
     "#fa0080"
+
+  ### Available Spaces
+
+  - `:lrgb` (Linear RGB)
+  - `:rgb`
+  - `:hsv`
+  - `:hsl`
+  - `:lch` and `:oklch`
+  - `:hcl`
+  - `:lab` and `:oklab`
+
   """
-  def mix(color, target, ratio \\ 0.5, mode \\ :lrgb) do
+  def mix(color, target, ratio \\ 0.5, space \\ :lrgb) do
     case validate_all([color, target], &Color.new/1) do
-      {:ok, [color, target]} -> Color.mix(color, target, ratio, mode)
+      {:ok, [color, target]} -> Color.mix(color, target, ratio, space)
       error -> error
     end
   end
@@ -327,6 +353,152 @@ defmodule Ultraviolet do
   def blend(color, mask, mode) do
     case validate_all([color, mask], &Color.new/1) do
       {:ok, [color, mask]} -> Color.blend(color, mask, mode)
+      error -> error
+    end
+  end
+
+  @doc """
+  Color scales, created with `Ultraviolet.scale/2`, map numbers onto a color
+  palette. Because they're basically lazy maps, they have similar access
+  functions as maps, as well as some Enumerable:
+  
+  - `Ultraviolet.Scale.get/3` to get a single color
+  - `Ultraviolet.Scale.fetch/2` to fetch a single color
+  - `Ultraviolet.Scale.take/2` to get several colors at once
+
+  To see other access functions, see the `Ultraviolet.Scale` documentation.
+
+  By default, a scale has the domain `[0, 1]` and a range of `"white"` to
+  `"black"`:
+
+    iex>{:ok, scale} = Ultraviolet.scale();
+    iex>{:ok, color} = Ultraviolet.Scale.fetch(scale, 0.25);
+    iex>Ultraviolet.Color.hex(color)
+    "#bfbfbf"
+
+  The first argument is an array of colors. Any color that can be read by
+  `Ultraviolet.new/1` works here too. If you pass more than two colors, they
+  will be evenly distributed along the gradient.
+
+    iex>{:ok, scale} = Ultraviolet.scale(["yellow", "008ae5"]);
+    iex>{:ok, scale} = Ultraviolet.scale(["yellow", "red", "black"]);
+
+  ## Options
+
+  Scales can be created with a number of options which affect the output colors:
+
+  ### Domain
+
+  You can change the input domain to match your use case. The default domain is
+  `[0, 1]`.
+
+    iex>{:ok, scale} = Ultraviolet.scale(["yellow", "008ae5"], domain: [0, 100]);
+
+  You can use this option to set the exact positions of each color:
+
+    iex>{:ok, scale} = Ultraviolet.scale(
+    ...>  ["yellow", "lightgreen", "008ae5"],
+    ...>  domain: [0, 0.25, 1]
+    ...>);
+
+  ### Color Space
+
+  As with `Ultraviolet.mix/2`, the result of color interpolation will depend on
+  the color space in which the channels are interpolated. The default `:space`
+  is `:rgb`.
+
+  This default is okay, but sometimes, two-color RGB gradients go through a gray
+  "dead zone", which...doesn't look great. Other color spaces can produce better
+  results.
+
+    iex>{:ok, scale} = Ultraviolet.scale(["yellow, "navy"], space: :lab);
+
+  The available values for this option are the same as with `Ultaviolet.mix/2`.
+
+  ### Gamma Correction
+
+  `:gamma` can be used to "shift" a scale's center more towards the beginning
+  (`:gamma` < 1) or the end (`:gamma` > 1). This option is typically used to
+  "even out" the lightness gradient. The default gamma is `1`.
+
+    iex>{:ok, scale} = Ultraviolet.scale(["yellow", "green"], gamma: 0.5);
+    iex>{:ok, scale} = Ultraviolet.scale(["yellow", "green"], gamma: 1);
+    iex>{:ok, scale} = Ultraviolet.scale(["yellow", "green"], gamma: 2);
+
+  ### Lightness Correction
+
+  `:correct_lightness?` makes sure the lightness range is spread evenly across a
+  color scale. This option is especially useful when working with multi-hue
+  color scales. where simple gamma correction won't help very much. The default
+  value is `false`, i.e. lightness correction turned off.
+
+    iex>{:ok, scale} = Ultraviolet.scale(
+    ...>  ["black", "red", "yellow", "white"],
+    ...>  correct_lightness?: true
+    ...>);
+
+  ### Padding
+
+  `:padding` reduces the color range by cutting off a fraction of the gradient
+  on both sides. If you pass a single number, the same padding will be applied
+  to both sides. The default padding is `0`, i.e. no padding applied.
+
+    iex>{:ok, scale} = Ultraviolet.scale(
+    ...>  ["red", "yellow", "blue"],
+    ...>  padding: 0.15
+    ...>);
+
+  Alternatively, you can specify the padding for each side individually by
+  passing a two-number tuple:
+
+    iex>{:ok, scale} = Ultraviolet.scale(
+    ...>  ["red", "yellow", "blue"],
+    ...>  padding: {0.2, 0}
+    ...>);
+
+  ### Classes
+
+  If you want the scale to return a distinct set of colors instead of a
+  continuous gradient, you can use the `:classes` option. Passing an integer
+  will break up the scale into equidistant classes. 
+
+    iex>{:ok, scale} = Ultraviolet.scale(["orange", "red"], classes: 5);
+
+  You can also define custom class breaks by passing them as an array.
+
+    iex>{:ok, scale} = Ultraviolet.scale(
+    ...>  ["orange", "red"],
+    ...> classes: [0, 0.3, 0.55, 0.85, 1]
+    ...>);
+
+  The default value is `0`, meaning a continuous gradient will be used.
+
+  ### Interpolation
+
+  By default, the colors retrieved from the scale are the result of linear
+  interpolation. If you want to change this, use the `:interpolation` option.
+  Right now, the only supported values are `:linear` and `:bezier`. The default
+  is `:linear.`
+
+    iex>{:ok, scale} = Ultraviolet.scale(
+    ...>  ["yellow", "red", "black"],
+    ...>  interpolation: :bezier
+    ...>);
+
+  ## Color Brewer
+
+  Ultraviolet includes the definitions from
+  [ColorBrewer](https://colorbrewer2.org) as well.
+
+    iex>{:ok, scale} = Ultraviolet.scale("YlGnBu");
+
+  You can reverse the colors by reversing the domain:
+
+    iex>{:ok, scale} = Ultraviolet.scale("YlGnBu", domain: [1, 0]);
+  """
+  def scale(colors, options \\ []) when is_list(options) and is_list(colors) do
+    case validate_all(colors, &Color.new/1) do
+      {:ok, colors} -> Scale.new(colors)
       error -> error
     end
   end
