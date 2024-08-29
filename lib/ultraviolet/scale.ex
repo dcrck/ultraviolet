@@ -6,6 +6,7 @@ defmodule Ultraviolet.Scale do
   """
 
   alias Ultraviolet.Color
+  alias __MODULE__
 
   defstruct [
     colors: [%Color{r: 255, g: 255, b: 255}, %Color{}],
@@ -22,8 +23,14 @@ defmodule Ultraviolet.Scale do
   Creates a new color scale. See `Ultraviolet.scale/2` for details about
   creating scales.
   """
-  def new(colors, options \\ []) when is_list(options) do
-    colors
+  def new(), do: {:ok, struct(Scale)}
+  def new(colors, options \\ []) when is_list(colors) and is_list(options) do
+    case Enum.find(colors, &!match?(%{__struct__: Color}, &1)) do
+      nil ->
+        {:ok, struct(Scale, Keyword.put(options, :colors, colors))}
+      other ->
+        {:error, "#{inspect(other)} is not a Color"}
+    end
   end
 
   @doc """

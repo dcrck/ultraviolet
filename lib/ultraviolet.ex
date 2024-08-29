@@ -512,11 +512,27 @@ defmodule Ultraviolet do
   Ultraviolet includes the definitions from
   [ColorBrewer](https://colorbrewer2.org) as well.
 
-    iex>{:ok, scale} = Ultraviolet.scale("YlGnBu");
+    iex>{:ok, scale} = Ultraviolet.scale("YlGnBu")
+    {:ok,
+     %Ultraviolet.Scale{
+       colors: [
+         %Ultraviolet.Color{r: 255, g: 255, b: 217, a: 1.0},
+         %Ultraviolet.Color{r: 237, g: 248, b: 177, a: 1.0},
+         %Ultraviolet.Color{r: 199, g: 233, b: 180, a: 1.0},
+         %Ultraviolet.Color{r: 127, g: 205, b: 187, a: 1.0},
+         %Ultraviolet.Color{r: 65, g: 182, b: 196, a: 1.0},
+         %Ultraviolet.Color{r: 29, g: 145, b: 192, a: 1.0},
+         %Ultraviolet.Color{r: 34, g: 94, b: 168, a: 1.0},
+         %Ultraviolet.Color{r: 37, g: 52, b: 148, a: 1.0},
+         %Ultraviolet.Color{r: 8, g: 29, b: 88, a: 1.0}
+       ]
+     }}
 
   You can reverse the colors by reversing the domain:
 
     iex>{:ok, scale} = Ultraviolet.scale("YlGnBu", domain: [1, 0]);
+    iex>Ultraviolet.Scale.fetch(scale, 0.25)
+    {:ok, %Ultraviolet.Color{r: 34, g: 94, b: 168}}
 
   ### Color Count
 
@@ -524,7 +540,17 @@ defmodule Ultraviolet do
   to retrieve the Color Brewer palette with the given number of colors.
   The default is `9`.
 
-    iex>{:ok, scale} = Ultraviolet.scale("YlGnBu", count: 5);
+    iex>{:ok, scale} = Ultraviolet.scale("YlGnBu", count: 5)
+    {:ok,
+     %Ultraviolet.Scale{
+       colors: [
+         %Ultraviolet.Color{r: 255, g: 255, b: 204, a: 1.0},
+         %Ultraviolet.Color{r: 161, g: 218, b: 180, a: 1.0},
+         %Ultraviolet.Color{r: 65, g: 182, b: 196, a: 1.0},
+         %Ultraviolet.Color{r: 44, g: 127, b: 184, a: 1.0},
+         %Ultraviolet.Color{r: 37, g: 52, b: 148, a: 1.0}
+       ]
+     }}
 
   """
   def scale(colors \\ ["white", "black"], options \\ [])
