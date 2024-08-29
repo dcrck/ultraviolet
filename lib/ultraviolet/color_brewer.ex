@@ -5,6 +5,8 @@ defmodule Ultraviolet.ColorBrewer do
   This module requires the optional `:json` dependency. If you don't include it,
   any call to `colors/2` will return `{:error, :not_found}`.
 
+  ## License
+
   ```
   Copyright (c) 2002 Cynthia Brewer, Mark Harrower, and The Pennsylvania State
   University.
