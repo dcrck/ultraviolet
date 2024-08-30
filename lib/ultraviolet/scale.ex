@@ -115,8 +115,10 @@ defmodule Ultraviolet.Scale do
 
   defp classify(%{classes: n} = scale, x) when is_integer(n) and n > 2 do
     {min, max} = domain_bounds(scale)
-    class = Enum.find_index(even_steps(min, max, n), &(x < &1)) - 1
-    {:ok, class / (n - 2)}
+    case Enum.find_index(even_steps(min, max, n), &(x < &1)) do
+      nil -> {:ok, max}
+      class ->  {:ok, (class - 1) / (n - 1)}
+    end
   end
 
   defp classify(%{classes: [], domain: [min | rest]},  x) do
@@ -306,7 +308,7 @@ defmodule Ultraviolet.Scale do
   is outside of the domain, returns the closest domain bound, i.e. the highest
   or lowest value in the domain.
   """
-  def get(scale, x, default) do
+  def get(scale, x, default \\ %Color{}) do
     case fetch(scale, x) do
       {:ok, color} -> color
       _ -> default

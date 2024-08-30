@@ -582,6 +582,18 @@ defmodule Ultraviolet.Color do
 
   defp do_blend({color, _}, _), do: color
 
+  @doc """
+  Returns the hexadecimal representation of an RGB color
+
+  ## Examples
+
+    iex>Color.hex(%Color{})
+    "#000000"
+    iex>Color.hex(%Color{r: 255})
+    "#ff0000"
+    iex>Color.hex(%Color{r: 255, a: 0.5})
+    "#ff000080"
+  """
   def hex(%Color{r: r, g: g, b: b, a: 1.0}) do
     [r, g, b]
     |> Enum.map(&to_hex/1)
@@ -599,6 +611,32 @@ defmodule Ultraviolet.Color do
   defp to_hex(value) when is_float(value), do: to_hex(round(value))
   defp to_hex(value) when value < 16, do: "0" <> Integer.to_string(value, 16)
   defp to_hex(value), do: Integer.to_string(value, 16)
+
+  @doc """
+  Returns the CSS representation of an RGB color
+
+  ## Examples
+
+    iex>Color.css(%Color{})
+    "rgb(0 0 0)"
+    iex>Color.css(%Color{r: 255})
+    "rgb(255 0 0)"
+    iex>Color.css(%Color{r: 255, a: 0.5})
+    "rgb(255 0 0 / 0.5)"
+  """
+  def css(%Color{r: r, g: g, b: b, a: 1.0}) do
+    [r, g, b]
+    |> Enum.map(&round/1)
+    |> Enum.join(" ")
+    |> then(&"rgb(#{&1})")
+  end
+
+  def css(%Color{r: r, g: g, b: b, a: a}) do
+    [r, g, b]
+    |> Enum.map(&round/1)
+    |> Enum.join(" ")
+    |> then(&"rgb(#{&1} / #{a})")
+  end
 
   # shorthand to deconstruct {:ok, result} structs
   defp ok!({:ok, result}), do: result
