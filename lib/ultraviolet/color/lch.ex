@@ -22,7 +22,7 @@ defmodule Ultraviolet.Color.LCH do
   def new(l, c, h), do: new(l, c, h, 1.0)
 
   def new(l, c, h, a)
-  when is_hue(h) and is_number(l) and is_number(c) and is_normalized(a) do
+      when is_hue(h) and is_number(l) and is_number(c) and is_normalized(a) do
     {:ok, struct(@me, h: h, c: c, l: l, a: a)}
   end
 
@@ -44,7 +44,7 @@ defmodule Ultraviolet.Color.LCH do
 
   @doc """
   Converts from an RGB Color struct to a LCH struct.
-  
+
   ## Options
 
     - `:reference`: the CIE Lab white reference point. Default: `:d65`
@@ -72,10 +72,12 @@ defmodule Ultraviolet.Color.LCH do
   defp lab_to_lch(%Lab{a_: a, b_: b} = lab, options) do
     round = Keyword.get(options, :round, 2)
     c = :math.sqrt(a * a + b * b)
-    h = cond do
-      round(c * 10000) == 0 -> 0
-      true -> mod(rad_to_deg(:math.atan2(b, a)) + 360, 360)
-    end
+
+    h =
+      cond do
+        round(c * 10000) == 0 -> 0
+        true -> mod(rad_to_deg(:math.atan2(b, a)) + 360, 360)
+      end
 
     [lab.l_, c, h]
     |> Enum.map(&maybe_round(&1, round))
@@ -87,6 +89,7 @@ defmodule Ultraviolet.Color.LCH do
   defp mod(n, x) when n >= 0, do: mod(n - x, n)
 
   defp maybe_round(channel, 0), do: round(channel)
+
   defp maybe_round(channel, digits) when is_integer(digits) and is_float(channel) do
     Float.round(channel, digits)
   end

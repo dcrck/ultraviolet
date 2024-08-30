@@ -15,32 +15,69 @@ defmodule Ultraviolet.Color.OKLab do
   alias __MODULE__
 
   @xyz2lms M3x3.new([
-    [D.new("0.819022437996703"), D.new("0.3619062600528904"), D.new("-0.1288737815209879")],
-    [D.new("0.0329836539323885"), D.new("0.9292868615863434"), D.new("0.0361446663506424")],
-    [D.new("0.0481771893596242"), D.new("0.2642395317527308"), D.new("0.6335478284694309")]
-  ])
+             [
+               D.new("0.819022437996703"),
+               D.new("0.3619062600528904"),
+               D.new("-0.1288737815209879")
+             ],
+             [
+               D.new("0.0329836539323885"),
+               D.new("0.9292868615863434"),
+               D.new("0.0361446663506424")
+             ],
+             [
+               D.new("0.0481771893596242"),
+               D.new("0.2642395317527308"),
+               D.new("0.6335478284694309")
+             ]
+           ])
 
   @lms2oklab M3x3.new([
-    [D.new("0.210454268309314"), D.new("0.7936177747023054"), D.new("-0.0040720430116193")],
-    [D.new("1.9779985324311684"), D.new("-2.4285922420485799"), D.new("0.450593709617411")],
-    [D.new("0.0259040424655478"), D.new("0.7827717124575296"), D.new("-0.8086757549230774")]
-  ])
+               [
+                 D.new("0.210454268309314"),
+                 D.new("0.7936177747023054"),
+                 D.new("-0.0040720430116193")
+               ],
+               [
+                 D.new("1.9779985324311684"),
+                 D.new("-2.4285922420485799"),
+                 D.new("0.450593709617411")
+               ],
+               [
+                 D.new("0.0259040424655478"),
+                 D.new("0.7827717124575296"),
+                 D.new("-0.8086757549230774")
+               ]
+             ])
 
   @lms2xyz M3x3.new([
-    [D.new("1.2268798758459243"), D.new("-0.5578149944602171"), D.new("0.2813910456659647")],
-    [D.new("-0.0405757452148008"), D.new("1.112286803280317"), D.new("-0.0717110580655164")],
-    [D.new("-0.0763729366746601"), D.new("-0.4214933324022432"), D.new("1.5869240198367816")]
-  ])
+             [
+               D.new("1.2268798758459243"),
+               D.new("-0.5578149944602171"),
+               D.new("0.2813910456659647")
+             ],
+             [
+               D.new("-0.0405757452148008"),
+               D.new("1.112286803280317"),
+               D.new("-0.0717110580655164")
+             ],
+             [
+               D.new("-0.0763729366746601"),
+               D.new("-0.4214933324022432"),
+               D.new("1.5869240198367816")
+             ]
+           ])
 
   @oklab2lms M3x3.new([
-    [D.new(1), D.new("0.3963377773761749"), D.new("0.2158037573099136")],
-    [D.new(1), D.new("-0.1055613458156586"), D.new("-0.0638541728258133")],
-    [D.new(1), D.new("-0.0894841775298119"), D.new("-1.2914855480194092")]
-  ])
+               [D.new(1), D.new("0.3963377773761749"), D.new("0.2158037573099136")],
+               [D.new(1), D.new("-0.1055613458156586"), D.new("-0.0638541728258133")],
+               [D.new(1), D.new("-0.0894841775298119"), D.new("-1.2914855480194092")]
+             ])
 
   defguardp is_normalized(n) when is_number(n) and n >= 0 and n <= 1
   defguardp is_ok(n) when is_number(n) and n >= -1.00001 and n <= 1.00001
-  @doc"""
+
+  @doc """
   Generates a new OKLab color
 
     iex>Ultraviolet.Color.OKLab.new(0.5, 0.0, 0.0)
@@ -50,7 +87,7 @@ defmodule Ultraviolet.Color.OKLab do
   def new(l, a, b), do: new(l, a, b, 1.0)
 
   def new(l, a, b, a_)
-  when is_normalized(a_) and is_ok(l) and is_ok(a) and is_ok(b) do
+      when is_normalized(a_) and is_ok(l) and is_ok(a) and is_ok(b) do
     {:ok, struct(OKLab, l_: l, a_: a, b_: b, a: a_)}
   end
 
@@ -96,7 +133,7 @@ defmodule Ultraviolet.Color.OKLab do
 
   @doc """
   Converts from sRGB to OKLab.
-  
+
   ## Options
 
     - `:round`: an integer if rounding L, a*, and b* channel values to N decimal
@@ -110,7 +147,7 @@ defmodule Ultraviolet.Color.OKLab do
     # XYZ to LMS
     |> M3x3.mult(M3x3.t(@xyz2lms))
     # cube root
-    |> Enum.map(fn d -> D.from_float(Float.pow(D.to_float(d), 1/3)) end)
+    |> Enum.map(fn d -> D.from_float(Float.pow(D.to_float(d), 1 / 3)) end)
     # LMS to OKLab
     |> M3x3.mult(M3x3.t(@lms2oklab))
     # create OKLab struct
@@ -121,10 +158,10 @@ defmodule Ultraviolet.Color.OKLab do
   defp clamp_to_byte(n), do: min(max(n, 0), 255)
 
   defp maybe_round(channel, 0), do: round(channel)
+
   defp maybe_round(channel, digits) when is_integer(digits) and is_float(channel) do
     Float.round(channel, digits)
   end
 
   defp maybe_round(channel, _), do: channel
 end
-

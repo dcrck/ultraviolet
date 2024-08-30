@@ -35,12 +35,12 @@ defmodule Ultraviolet.Color.Lab do
     "Kn" => D.new("18"),
     "kE" => D.div(D.new("216"), D.new("24389")),
     "kKE" => D.new("8"),
-    "kK" => D.div(D.new("24389"), D.new("27")),
+    "kK" => D.div(D.new("24389"), D.new("27"))
   }
 
   defguardp is_normalized(n) when is_number(n) and n >= 0 and n <= 1
 
-  @doc"""
+  @doc """
   Generates a new CIE Lab color
   """
   def new(l, a, b), do: new(l, a, b, 1.0)
@@ -51,7 +51,7 @@ defmodule Ultraviolet.Color.Lab do
 
   @doc """
   Converts from CIE Lab to sRGB
-  
+
   ## Options
 
     - `:reference`: the CIE Lab white reference point. Default: `:d65`
@@ -61,6 +61,7 @@ defmodule Ultraviolet.Color.Lab do
   def to_rgb(%Lab{} = lab, options \\ []) when is_list(options) do
     reference = Keyword.get(options, :reference, :d65)
     round = Keyword.get(options, :round, 0)
+
     case XYZ.whitepoint(reference) do
       {:ok, whitepoint} ->
         lab
@@ -70,6 +71,7 @@ defmodule Ultraviolet.Color.Lab do
         |> Enum.map(&clamp_to_byte/1)
         |> Enum.map(&maybe_round(&1, round))
         |> then(fn [r, g, b] -> Color.new(r, g, b, lab.a) end)
+
       error ->
         error
     end
@@ -77,7 +79,7 @@ defmodule Ultraviolet.Color.Lab do
 
   @doc """
   Converts from an RGB Color struct to a Lab struct.
-  
+
   ## Options
 
     - `:reference`: the CIE Lab white reference point. Default: `:d65`
@@ -97,6 +99,7 @@ defmodule Ultraviolet.Color.Lab do
   end
 
   defp maybe_round(channel, 0), do: round(channel)
+
   defp maybe_round(channel, digits) when is_integer(digits) and is_float(channel) do
     Float.round(channel, digits)
   end
@@ -136,6 +139,7 @@ defmodule Ultraviolet.Color.Lab do
       D.gt?(l, kKE) ->
         term = l |> D.add(16) |> D.div(116)
         term |> D.mult(term) |> D.mult(term)
+
       true ->
         D.div(l, kK)
     end
@@ -162,7 +166,7 @@ defmodule Ultraviolet.Color.Lab do
 
   defp r_inv(r, kK, kE) do
     cond do
-      D.gt?(r, kE) -> r |> D.to_float() |> Float.pow(1/3)
+      D.gt?(r, kE) -> r |> D.to_float() |> Float.pow(1 / 3)
       true -> r |> D.mult(kK) |> D.add(16) |> D.div(116) |> D.to_float()
     end
   end

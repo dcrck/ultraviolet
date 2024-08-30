@@ -1,5 +1,5 @@
 defmodule Ultraviolet do
-  @moduledoc"""
+  @moduledoc """
   Ultraviolet is a color manipulation library designed to work like
   [`chroma-js`](https://github.com/gka/chroma.js). It may not have full parity
   with `chroma-js`, but it includes most of the common operations and features.
@@ -379,7 +379,7 @@ defmodule Ultraviolet do
   Color scales, created with `Ultraviolet.scale/2`, map numbers onto a color
   palette. Because they're basically lazy maps, they have similar access
   functions as maps, as well as some Enumerable:
-  
+
   - `Ultraviolet.Scale.get/3` to get a single color
   - `Ultraviolet.Scale.fetch/2` to fetch a single color
   - `Ultraviolet.Scale.take/2` to get several colors at once
@@ -644,6 +644,7 @@ defmodule Ultraviolet do
 
   def scale(palette, options) when is_binary(palette) and is_list(options) do
     {count, options} = Keyword.pop(options, :count, 9)
+
     case ColorBrewer.colors(palette, count) do
       {:ok, colors} -> Scale.new(colors, options)
       error -> error

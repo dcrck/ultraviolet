@@ -38,7 +38,7 @@ defmodule Ultraviolet.MixProject do
       # only required to parse colorbrewer.json file
       {:jason, "~> 1.4", optional: true, runtime: false},
       # test coverage
-      {:excoveralls, "~> 0.18", only: :test},
+      {:excoveralls, "~> 0.18", only: :test}
     ]
   end
 

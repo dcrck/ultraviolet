@@ -63,6 +63,7 @@ defmodule Ultraviolet.Color do
     case parse_hex_list(r: r, g: g, b: b, a: a) do
       {:error, _} = error ->
         error
+
       valid_list ->
         {:ok, struct(@me, Keyword.update!(valid_list, :a, &(&1 / 255)))}
     end
@@ -70,7 +71,7 @@ defmodule Ultraviolet.Color do
 
   # short hexadecimal
   def new(<<r::binary-size(1), g::binary-size(1), b::binary-size(1)>>) do
-    case parse_hex_list(r: r<>r, g: g<>g, b: b<>b) do
+    case parse_hex_list(r: r <> r, g: g <> g, b: b <> b) do
       {:error, _} = error -> error
       valid_list -> {:ok, struct(@me, valid_list)}
     end
@@ -78,22 +79,24 @@ defmodule Ultraviolet.Color do
 
   # short hexadecimal with alpha
   def new(<<r::binary-size(1), g::binary-size(1), b::binary-size(1), a::binary-size(1)>>) do
-    case parse_hex_list(r: r<>r, g: g<>g, b: b<>b, a: a<>a) do
+    case parse_hex_list(r: r <> r, g: g <> g, b: b <> b, a: a <> a) do
       {:error, _} = error ->
         error
+
       valid_list ->
         {:ok, struct(@me, Keyword.update!(valid_list, :a, &(&1 / 255)))}
     end
   end
 
   # hexadecimal number (6-digit only!)
-  def new(n) when is_integer(n) and n >= 0 and n <= 16777215 do
+  def new(n) when is_integer(n) and n >= 0 and n <= 16_777_215 do
     [:b, :g, :r]
     |> Enum.reduce_while({[], n}, fn
       _, {list, 0} ->
         {:halt, {list, 0}}
+
       key, {list, acc} ->
-        {:cont, {Keyword.put(list, key, band(acc, 0xff)), bsr(acc, 8)}}
+        {:cont, {Keyword.put(list, key, band(acc, 0xFF)), bsr(acc, 8)}}
     end)
     |> then(fn {list, _n} -> {:ok, struct(@me, list)} end)
   end
@@ -134,7 +137,7 @@ defmodule Ultraviolet.Color do
   end
 
   def new(%{l_: l, a_: a, b_: b} = lab, mode, opts)
-  when mode in [:lab, :oklab] and is_list(opts) do
+      when mode in [:lab, :oklab] and is_list(opts) do
     new(l, a, b, Keyword.merge(opts, alpha: Map.get(lab, :a, 1.0), mode: mode))
   end
 
@@ -157,7 +160,7 @@ defmodule Ultraviolet.Color do
   def new(_, _, _, _, _), do: {:error, :invalid}
 
   def new(r, g, b, a, :rgb, _options)
-  when is_normalized(a) and is_byte(r) and is_byte(g) and is_byte(b) do
+      when is_normalized(a) and is_byte(r) and is_byte(g) and is_byte(b) do
     {:ok, struct(@me, r: r, g: g, b: b, a: a)}
   end
 
@@ -206,6 +209,7 @@ defmodule Ultraviolet.Color do
       case Integer.parse(hex, 16) do
         {value, ""} when is_byte(value) ->
           {:cont, [{key, value} | acc]}
+
         _ ->
           {:halt, {:error, "#{key} value must be a hex value between 0 and ff, got: #{hex}"}}
       end
@@ -275,6 +279,7 @@ defmodule Ultraviolet.Color do
   def into(%Color{} = color, rgb, _options) when rgb in [:rgb, :lrgb] do
     {:ok, color}
   end
+
   def into(%Color{} = color, :hsl, _options), do: HSL.from_rgb(color)
   def into(%Color{} = color, :hsv, _options), do: HSV.from_rgb(color)
 
@@ -287,7 +292,7 @@ defmodule Ultraviolet.Color do
   end
 
   def into(%Color{} = color, lch_or_hcl, options)
-  when is_list(options) and lch_or_hcl in [:hcl, :lch] do
+      when is_list(options) and lch_or_hcl in [:hcl, :lch] do
     LCH.from_rgb(color, options)
   end
 
@@ -322,7 +327,7 @@ defmodule Ultraviolet.Color do
   """
   def temperature(%Color{} = color), do: Temperature.from_rgb(color)
 
-  @doc"""
+  @doc """
   Get or set the color opacity.
 
   ## Examples
@@ -335,6 +340,7 @@ defmodule Ultraviolet.Color do
   """
   # this works because all Color structs use `:a` for opacity
   def alpha(%{a: a} = color) when is_struct(color), do: a
+
   def alpha(color, alpha) when is_struct(color) and is_normalized(alpha) do
     %{color | a: alpha}
   end
@@ -418,7 +424,6 @@ defmodule Ultraviolet.Color do
   """
   def desaturate!(%Color{} = color, amount \\ 1), do: saturate!(color, -amount)
 
-
   @doc """
   Produces a shade of the given color. This is syntactic sugar for `mix/4`
   with a target color of `black`.
@@ -458,6 +463,7 @@ defmodule Ultraviolet.Color do
     |> mix(%Color{r: 255, g: 255, b: 255}, ratio, mode)
     |> ok!()
   end
+
   @doc """
   Mixes two colors. The mix `weight` is a value between 0 and 1.
 
@@ -559,7 +565,7 @@ defmodule Ultraviolet.Color do
 
   defp clamp_to_byte(n), do: min(max(n, 0), 255)
 
-  @doc"""
+  @doc """
   Blends two colors using RGB channel-wise blend functions. See
   `Ultraviolet.blend/3` for examples and valid blend modes.
   """
@@ -584,7 +590,7 @@ defmodule Ultraviolet.Color do
   end
 
   defp do_blend({color, mask}, :overlay) when mask < 128 do
-    (2 * color * mask) / 255
+    2 * color * mask / 255
   end
 
   defp do_blend({color, mask}, :overlay) do
@@ -598,7 +604,7 @@ defmodule Ultraviolet.Color do
   defp do_blend({255, _mask}, :dodge), do: 255
 
   defp do_blend({color, mask}, :dodge) do
-    case (255 * (mask / 255)) / (1 - color / 255) do
+    case 255 * (mask / 255) / (1 - color / 255) do
       a when a <= 255 -> a
       _ -> 255
     end
@@ -632,7 +638,7 @@ defmodule Ultraviolet.Color do
   end
 
   def hex(%Color{r: r, g: g, b: b, a: a}) do
-    [r, g, b, a*255]
+    [r, g, b, a * 255]
     |> Enum.map(&to_hex/1)
     |> Enum.join()
     |> then(&String.downcase("##{&1}"))
@@ -670,6 +676,7 @@ defmodule Ultraviolet.Color do
 
   # shorthand to deconstruct {:ok, result} structs
   defp ok!({:ok, result}), do: result
+
   defp ok!(other) do
     raise "expected a structure like {:ok, result}, got: #{inspect(other)}"
   end

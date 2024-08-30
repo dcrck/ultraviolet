@@ -15,10 +15,13 @@ defmodule ColorTest do
   end
 
   test "auto-detect correct hex colors" do
-    Enum.each(["#ff9900", "#FF9900", "#F90", "f90", "FF9900", "FF9900FF", "F90F", "#F90F"], fn hex ->
-      assert {:ok, color} = Color.new(hex)
-      assert Color.hex(color) == "#ff9900"
-    end) 
+    Enum.each(
+      ["#ff9900", "#FF9900", "#F90", "f90", "FF9900", "FF9900FF", "F90F", "#F90F"],
+      fn hex ->
+        assert {:ok, color} = Color.new(hex)
+        assert Color.hex(color) == "#ff9900"
+      end
+    )
   end
 
   test "using color names doesn't work when directly calling the Color module functions" do

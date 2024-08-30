@@ -82,9 +82,10 @@ defmodule Ultraviolet.ColorBrewer do
             escaped = Macro.escape(colors)
             def colors(unquote(name), unquote(len)), do: {:ok, unquote(escaped)}
           else
-            {:error, _} = error -> 
+            {:error, _} = error ->
               len = String.to_integer(count_str)
               def colors(unquote(name), unquote(len)), do: unquote(error)
+
             _ ->
               :noop
           end

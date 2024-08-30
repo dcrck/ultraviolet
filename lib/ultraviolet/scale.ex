@@ -10,24 +10,22 @@ defmodule Ultraviolet.Scale do
   alias Ultraviolet.Color
   alias __MODULE__
 
-  defstruct [
-    colors: [%Color{r: 255, g: 255, b: 255}, %Color{}],
-    space: :rgb,
-    domain: [0, 1],
-    padding: {0, 0},
-    gamma: 1,
-    correct_lightness?: false,
-    classes: 0,
-    interpolation: :linear,
-    positions: [],
-  ]
+  defstruct colors: [%Color{r: 255, g: 255, b: 255}, %Color{}],
+            space: :rgb,
+            domain: [0, 1],
+            padding: {0, 0},
+            gamma: 1,
+            correct_lightness?: false,
+            classes: 0,
+            interpolation: :linear,
+            positions: []
 
   @doc """
   Creates a new color scale. See `Ultraviolet.scale/2` for details about
   creating scales.
   """
   def new(colors, options \\ []) when is_list(colors) and is_list(options) do
-    with nil <- Enum.find(colors, &!match?(%{__struct__: Color}, &1)),
+    with nil <- Enum.find(colors, &(!match?(%{__struct__: Color}, &1))),
          {:ok, opts} <- validate_and_add_options(options, colors) do
       struct(Scale, Map.put(opts, :colors, colors))
       |> add_color_positions()
@@ -70,9 +68,11 @@ defmodule Ultraviolet.Scale do
   defp color_positions(%{domain: domain, colors: colors} = scale) do
     {min, max} = domain_bounds(scale)
     n = length(colors)
+
     cond do
       n == length(domain) && min != max ->
         Enum.map(domain, fn d -> (d - min) / (max - min) end)
+
       true ->
         even_steps(0, 1, n)
     end
@@ -114,13 +114,14 @@ defmodule Ultraviolet.Scale do
 
   defp classify(%{classes: n} = scale, x) when is_integer(n) and n > 2 do
     {min, max} = domain_bounds(scale)
+
     case Enum.find_index(even_steps(min, max, n), &(x < &1)) do
       nil -> {:ok, max}
-      class ->  {:ok, (class - 1) / (n - 1)}
+      class -> {:ok, (class - 1) / (n - 1)}
     end
   end
 
-  defp classify(%{classes: [], domain: [min | rest]},  x) do
+  defp classify(%{classes: [], domain: [min | rest]}, x) do
     {:ok, normalize_between(min, hd(Enum.reverse(rest)), x)}
   end
 
@@ -152,6 +153,7 @@ defmodule Ultraviolet.Scale do
 
   defp domain_map(scale, x) do
     {min, max} = domain_bounds(scale)
+
     case length(scale.domain) do
       d_len when d_len != length(scale.colors) and min != max ->
         maybe_adjust_domain_map(
@@ -159,6 +161,7 @@ defmodule Ultraviolet.Scale do
           even_steps(0, 1, d_len),
           x
         )
+
       _ ->
         {:ok, x}
     end
@@ -172,9 +175,10 @@ defmodule Ultraviolet.Scale do
     |> Enum.zip(out)
     |> Enum.chunk_every(2, 1)
     |> Enum.reduce_while({:ok, x}, fn
-      [{b0, o0}, {b1, o1}], {:ok, v} when v >= b0  and v < b1 ->
+      [{b0, o0}, {b1, o1}], {:ok, v} when v >= b0 and v < b1 ->
         f = (v - b0) / (b1 - b0)
         {:halt, {:ok, o0 + f * (o1 - o0)}}
+
       _, x ->
         {:cont, x}
     end)
@@ -195,6 +199,7 @@ defmodule Ultraviolet.Scale do
   end
 
   defp correct_lightness(_scale, _target, x, _x0, _x1, 0, _pol), do: x
+
   defp correct_lightness(scale, target, x, x0, x1, attempts, pol) do
     {:ok, color} = fetch(scale, x, true)
     {:ok, %{l_: actual}} = Color.into(color, :lab)
@@ -206,10 +211,11 @@ defmodule Ultraviolet.Scale do
   defp diff_sign(_), do: 1
 
   defp do_correct_lightness(_scale, _target, diff, x, _x0, _x1, _n, _pol)
-  when diff <= 0.01 and diff >= -0.01, do: x
+       when diff <= 0.01 and diff >= -0.01,
+       do: x
 
   defp do_correct_lightness(scale, target, diff, x, _x0, x1, n, pol)
-  when diff < 0 do
+       when diff < 0 do
     correct_lightness(scale, target, x + (x1 - x) / 2, x, x1, n - 1, pol)
   end
 
@@ -256,7 +262,7 @@ defmodule Ultraviolet.Scale do
   end
 
   defp interpolate(%{interpolation: :bezier, colors: colors, space: space}, x)
-  when space in [:lab, :oklab] do
+       when space in [:lab, :oklab] do
     n = length(colors) - 1
     {:ok, labs} = validate_all(colors, &Color.into(&1, space))
 
@@ -280,10 +286,13 @@ defmodule Ultraviolet.Scale do
     |> Enum.reduce_while({:ok, x}, fn
       [{pos, color} | _], {:ok, x} when x <= pos ->
         {:halt, {:ok, color}}
+
       [{pos, color}], {:ok, x} when x >= pos ->
         {:halt, {:ok, color}}
+
       [{pos, color}, {next, target}], {:ok, x} when x > pos and x < next ->
         {:halt, Color.mix(color, target, (x - pos) / (next - pos), scale.space)}
+
       _, x ->
         {:cont, x}
     end)
@@ -295,6 +304,7 @@ defmodule Ultraviolet.Scale do
   end
 
   defp find_pascal_row(row, 0), do: row
+
   defp find_pascal_row(row, n) do
     row
     |> Enum.chunk_every(2, 1, :discard)
@@ -345,6 +355,7 @@ defmodule Ultraviolet.Scale do
   defp even_steps(min, max, n) when n >= 2 do
     Enum.map(1..n, fn i -> min + (i - 1) * (max - min) / (n - 1) end)
   end
+
   defp even_steps(min, max, _n), do: [min, max]
 
   defp domain_bounds(%{domain: []}), do: {0, 1}

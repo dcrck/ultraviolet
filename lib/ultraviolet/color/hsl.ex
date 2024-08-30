@@ -21,7 +21,7 @@ defmodule Ultraviolet.Color.HSL do
   def new(h, s, l), do: new(h, s, l, 1.0)
 
   def new(h, s, l, a)
-  when is_hue(h) and is_normalized(s) and is_normalized(l) and is_normalized(a) do
+      when is_hue(h) and is_normalized(s) and is_normalized(l) and is_normalized(a) do
     {:ok, struct(@me, h: h, s: s, l: l, a: a)}
   end
 
@@ -49,19 +49,20 @@ defmodule Ultraviolet.Color.HSL do
   defp convert_to_rgb(hsl, q) do
     h = hsl.h / 360
     p = 2 * hsl.l - q
+
     Color.new(
-      round(hue_to_rgb(p, q, h + 1/3) * 255),
+      round(hue_to_rgb(p, q, h + 1 / 3) * 255),
       round(hue_to_rgb(p, q, h) * 255),
-      round(hue_to_rgb(p, q, h - 1/3) * 255),
+      round(hue_to_rgb(p, q, h - 1 / 3) * 255),
       hsl.a
     )
   end
 
   defp hue_to_rgb(p, q, t) when t < 0, do: hue_to_rgb(p, q, t + 1)
   defp hue_to_rgb(p, q, t) when t > 1, do: hue_to_rgb(p, q, t - 1)
-  defp hue_to_rgb(p, q, t) when t < 1/6, do: p + (q - p) * 6 * t
+  defp hue_to_rgb(p, q, t) when t < 1 / 6, do: p + (q - p) * 6 * t
   defp hue_to_rgb(_p, q, t) when t < 0.5, do: q
-  defp hue_to_rgb(p, q, t) when t < 2/3, do: p + (q - p) * (2/3 - t) * 6
+  defp hue_to_rgb(p, q, t) when t < 2 / 3, do: p + (q - p) * (2 / 3 - t) * 6
   defp hue_to_rgb(p, _, _), do: p
 
   @doc """
@@ -74,6 +75,7 @@ defmodule Ultraviolet.Color.HSL do
     v = Enum.max(normalized)
     d = v - Enum.min(normalized)
     f = 1 - abs(v + v - d - 1)
+
     new(
       round(60 * maybe_correct_hue(hue(normalized, v, d))),
       saturation(d, f),

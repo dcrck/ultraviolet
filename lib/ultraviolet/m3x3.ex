@@ -14,11 +14,15 @@ defmodule Ultraviolet.M3x3 do
   def new([[m00, m01, m02], [m10, m11, m12], [m20, m21, m22]]) do
     struct(
       M3x3,
-      [
-        m00: D.new(m00), m01: D.new(m01), m02: D.new(m02),
-        m10: D.new(m10), m11: D.new(m11), m12: D.new(m12),
-        m20: D.new(m20), m21: D.new(m21), m22: D.new(m22),
-      ]
+      m00: D.new(m00),
+      m01: D.new(m01),
+      m02: D.new(m02),
+      m10: D.new(m10),
+      m11: D.new(m11),
+      m12: D.new(m12),
+      m20: D.new(m20),
+      m21: D.new(m21),
+      m22: D.new(m22)
     )
   end
 
@@ -27,9 +31,15 @@ defmodule Ultraviolet.M3x3 do
   """
   def t(%M3x3{} = m) do
     %M3x3{
-      m00: m.m00, m01: m.m10, m02: m.m20,
-      m10: m.m01, m11: m.m11, m12: m.m21,
-      m20: m.m02, m21: m.m12, m22: m.m22,
+      m00: m.m00,
+      m01: m.m10,
+      m02: m.m20,
+      m10: m.m01,
+      m11: m.m11,
+      m12: m.m21,
+      m20: m.m02,
+      m21: m.m12,
+      m22: m.m22
     }
   end
 
@@ -53,11 +63,9 @@ defmodule Ultraviolet.M3x3 do
       D.mult(x, m.m00)
       |> D.add(D.mult(y, m.m10))
       |> D.add(D.mult(z, m.m20)),
-
       D.mult(x, m.m01)
       |> D.add(D.mult(y, m.m11))
       |> D.add(D.mult(z, m.m21)),
-
       D.mult(x, m.m02)
       |> D.add(D.mult(y, m.m12))
       |> D.add(D.mult(z, m.m22))

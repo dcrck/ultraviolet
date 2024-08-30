@@ -15,7 +15,7 @@ defmodule LabTest do
     "green" => {{0, 255, 0, 1}, {87.73, -86.18, 83.18}},
     "cyan" => {{0, 255, 255, 1}, {91.11, -48.09, -14.13}},
     "blue" => {{0, 0, 255, 1}, {32.3, 79.19, -107.86}},
-    "magenta" => {{255, 0, 255, 1}, {60.32, 98.23, -60.82}},
+    "magenta" => {{255, 0, 255, 1}, {60.32, 98.23, -60.82}}
   }
 
   for {name, {{r, g, b, a}, {l, a_star, b_star}}} <- cases do
@@ -34,9 +34,10 @@ defmodule LabTest do
     {:ok, yellow_lab} = Lab.new(97.14, -21.55, 94.48)
     # defaults to :d65
     assert {:ok, %Color{r: 255, g: 255, b: 0, a: 1.0}} =
-      Lab.to_rgb(yellow_lab)
+             Lab.to_rgb(yellow_lab)
+
     # alternate color returns alternate results
     assert {:ok, %Color{r: 243, g: 255, b: 0, a: 1.0}} =
-      Lab.to_rgb(yellow_lab, reference: :d50)
+             Lab.to_rgb(yellow_lab, reference: :d50)
   end
 end

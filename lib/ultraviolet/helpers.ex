@@ -32,6 +32,7 @@ defmodule Ultraviolet.Helpers do
         list
         |> Enum.map(&String.to_integer/1)
         |> Ultraviolet.Color.new()
+
       _ ->
         {:error, :no_match}
     end
