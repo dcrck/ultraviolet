@@ -273,6 +273,8 @@ defmodule Ultraviolet.Color do
       {:ok, %Ultraviolet.Color{r: 170, g: 210, b: 140, a: 1.0}}
       iex> Ultraviolet.Color.into(color, :oklch, round: 0)
       {:ok, %Ultraviolet.Color.OKLCH{l: 1, c: 0, h: 132}}
+      iex> Ultraviolet.Color.into(color, :oklch, round: 1)
+      {:ok, %Ultraviolet.Color.OKLCH{l: 0.8, c: 0.1, h: 132.5}}
   """
   def into(color, mode, options \\ [])
 

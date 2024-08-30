@@ -22,6 +22,11 @@ defmodule ScaleTest do
     test "ends with black", ctx do
       assert Color.hex(Scale.get(ctx.scale, 1)) == "#000000"
     end
+
+    test "fetch/1 works outside of the domain", ctx do
+      assert {:ok, _} = Scale.fetch(ctx.scale, -1)
+      assert {:ok, _} = Scale.fetch(ctx.scale, 100)
+    end
   end
 
   describe "RGB scale (white -> black), domain and classses checks" do

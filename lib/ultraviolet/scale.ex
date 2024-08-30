@@ -89,8 +89,6 @@ defmodule Ultraviolet.Scale do
   def fetch(%Scale{} = scale, value, bypass?) when is_number(value) do
     with {:ok, x} <- domain(scale, value, bypass?) do
       interpolate(scale, x)
-    else
-      error -> error
     end
   end
 
