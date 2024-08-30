@@ -99,7 +99,7 @@ defmodule Ultraviolet.Color.XYZ do
   defp rgb_to_xyz(color, reference_point) do
     [color.r, color.g, color.b]
     # normalize and gamma adjust
-    |> Enum.map(&gamma_adjust(D.div(D.new(&1), 255)))
+    |> Enum.map(&gamma_adjust(D.div(D.new(to_string(&1)), 255)))
     # convert to xyz (stage 1)
     |> M3x3.mult(@rgb2xyz)
     # apply adaption matrix

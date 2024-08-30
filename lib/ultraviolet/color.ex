@@ -520,7 +520,8 @@ defmodule Ultraviolet.Color do
   # the final step...
   # alpha channel is always a simple weighted average
   defp consolidate({:a, v}, _mode), do: {:a, v}
-  defp consolidate({k, v}, :lrgb), do: {k, :math.sqrt(v)}
+  defp consolidate({k, v}, :lrgb), do: {k, clamp_to_byte(:math.sqrt(v))}
+  defp consolidate({k, v}, :rgb), do: {k, clamp_to_byte(v)}
 
   defp consolidate({:h, {cos, sin}}, _mode) do
     {:h, maybe_correct_hue(:math.atan2(sin, cos) * 180 / :math.pi())}
@@ -531,6 +532,8 @@ defmodule Ultraviolet.Color do
   defp maybe_correct_hue(h) when h < 0, do: maybe_correct_hue(h + 360)
   defp maybe_correct_hue(h) when h > 360, do: maybe_correct_hue(h - 360)
   defp maybe_correct_hue(h), do: h
+
+  defp clamp_to_byte(n), do: min(max(n, 0), 255)
 
   @doc"""
   Blends two colors using RGB channel-wise blend functions. See

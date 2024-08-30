@@ -381,7 +381,18 @@ defmodule Ultraviolet do
   will be evenly distributed along the gradient.
 
     iex>{:ok, scale} = Ultraviolet.scale(["yellow", "008ae5"]);
+    iex>Ultraviolet.Scale.take(scale, [0, 1])
+    [
+      %Ultraviolet.Color{r: 255, g: 255, b: 0},
+      %Ultraviolet.Color{r: 0, g: 138, b: 229},
+    ]
     iex>{:ok, scale} = Ultraviolet.scale(["yellow", "red", "black"]);
+    iex>Ultraviolet.Scale.take(scale, [0, 0.5, 1])
+    [
+      %Ultraviolet.Color{r: 255, g: 255, b: 0},
+      %Ultraviolet.Color{r: 255, g: 0, b: 0},
+      %Ultraviolet.Color{r: 0, g: 0, b: 0},
+    ]
 
   ## Options
 
@@ -393,6 +404,8 @@ defmodule Ultraviolet do
   `[0, 1]`.
 
     iex>{:ok, scale} = Ultraviolet.scale(["yellow", "008ae5"], domain: [0, 100]);
+    iex>Enum.map(Ultraviolet.Scale.take(scale, [0, 100]), &Ultraviolet.Color.hex/1)
+    ["#ffff00", "#008ae5"]
 
   You can use this option to set the exact positions of each color:
 
@@ -400,6 +413,8 @@ defmodule Ultraviolet do
     ...>  ["yellow", "lightgreen", "008ae5"],
     ...>  domain: [0, 0.25, 1]
     ...>);
+    iex>Enum.map(Ultraviolet.Scale.take(scale, [0, 0.25, 1]), &Ultraviolet.Color.hex/1)
+    ["#ffff00", "#90ee90", "#008ae5"]
 
   ### Color Space
 
@@ -411,7 +426,16 @@ defmodule Ultraviolet do
   "dead zone", which...doesn't look great. Other color spaces can produce better
   results.
 
-    iex>{:ok, scale} = Ultraviolet.scale(["yellow, "navy"], space: :lab);
+    iex>{:ok, scale} = Ultraviolet.scale(["yellow", "navy"]);
+    iex>{:ok, color} = Ultraviolet.Scale.fetch(scale, 0.6);
+    iex>Ultraviolet.Color.hex(color)
+    # this is mostly gray
+    "#66664d"
+    iex>{:ok, scale} = Ultraviolet.scale(["yellow", "navy"], space: :lab);
+    iex>{:ok, color} = Ultraviolet.Scale.fetch(scale, 0.6);
+    iex>Ultraviolet.Color.hex(color)
+    # this is better
+    "#8e6271"
 
   The available values for this option are the same as with `Ultaviolet.mix/2`.
 
@@ -421,9 +445,9 @@ defmodule Ultraviolet do
   (`:gamma` < 1) or the end (`:gamma` > 1). This option is typically used to
   "even out" the lightness gradient. The default gamma is `1`.
 
-    iex>{:ok, scale} = Ultraviolet.scale(["yellow", "green"], gamma: 0.5);
-    iex>{:ok, scale} = Ultraviolet.scale(["yellow", "green"], gamma: 1);
-    iex>{:ok, scale} = Ultraviolet.scale(["yellow", "green"], gamma: 2);
+    iex>{:ok, _scale} = Ultraviolet.scale(["yellow", "green"], gamma: 0.5);
+    iex>{:ok, _scale} = Ultraviolet.scale(["yellow", "green"], gamma: 1);
+    iex>{:ok, _scale} = Ultraviolet.scale(["yellow", "green"], gamma: 2);
 
   ### Lightness Correction
 
@@ -433,9 +457,18 @@ defmodule Ultraviolet do
   value is `false`, i.e. lightness correction turned off.
 
     iex>{:ok, scale} = Ultraviolet.scale(
+    ...>  ["black", "red", "yellow", "white"]
+    ...>);
+    iex>{:ok, color} = Ultraviolet.Scale.fetch(scale, 0.67);
+    iex>Ultraviolet.Color.hex(color)
+    "#ffff03"
+    iex>{:ok, corrected_scale} = Ultraviolet.scale(
     ...>  ["black", "red", "yellow", "white"],
     ...>  correct_lightness?: true
     ...>);
+    iex>{:ok, color} = Ultraviolet.Scale.fetch(corrected_scale, 0.67);
+    iex>Ultraviolet.Color.hex(color)
+    "#ff8000"
 
   ### Padding
 
@@ -443,7 +476,7 @@ defmodule Ultraviolet do
   on both sides. If you pass a single number, the same padding will be applied
   to both sides. The default padding is `0`, i.e. no padding applied.
 
-    iex>{:ok, scale} = Ultraviolet.scale(
+    iex>{:ok, _scale} = Ultraviolet.scale(
     ...>  ["red", "yellow", "blue"],
     ...>  padding: 0.15
     ...>);
@@ -451,7 +484,7 @@ defmodule Ultraviolet do
   Alternatively, you can specify the padding for each side individually by
   passing a two-number tuple:
 
-    iex>{:ok, scale} = Ultraviolet.scale(
+    iex>{:ok, _scale} = Ultraviolet.scale(
     ...>  ["red", "yellow", "blue"],
     ...>  padding: {0.2, 0}
     ...>);
@@ -462,14 +495,18 @@ defmodule Ultraviolet do
   continuous gradient, you can use the `:classes` option. Passing an integer
   will break up the scale into equidistant classes. 
 
-    iex>{:ok, scale} = Ultraviolet.scale(["orange", "red"], classes: 5);
+    iex>{:ok, scale} = Ultraviolet.scale("OrRd", classes: 5);
+    iex>Enum.map(Ultraviolet.Scale.take(scale, [0.1, 0.15]), &Ultraviolet.Color.hex/1)
+    ["#fff7ec", "#fff7ec"]
 
   You can also define custom class breaks by passing them as an array.
 
     iex>{:ok, scale} = Ultraviolet.scale(
-    ...>  ["orange", "red"],
-    ...> classes: [0, 0.3, 0.55, 0.85, 1]
+    ...>  "OrRd",
+    ...>  classes: [0, 0.3, 0.55, 0.85, 1]
     ...>);
+    iex>Enum.map(Ultraviolet.Scale.take(scale, [0.15, 0.25]), &Ultraviolet.Color.hex/1)
+    ["#fff7ec", "#fff7ec"]
 
   The default value is `0`, meaning a continuous gradient will be used.
 
@@ -486,7 +523,7 @@ defmodule Ultraviolet do
   There are also two builtin interpolation options: `:linear` for linear
   interpolation (the default) and `:bezier` for Bezier interpolation.
 
-    iex>{:ok, scale} = Ultraviolet.scale(
+    iex>{:ok, _scale} = Ultraviolet.scale(
     ...>  ["yellow", "red", "black"],
     ...>  interpolation: :bezier
     ...>);
@@ -498,13 +535,13 @@ defmodule Ultraviolet do
 
   TODO finish this example!
 
-    iex>params = %{start: 300, rotations: -1.5, hue: 1, gamma: 1, lightness: {0, 1}};
+    iex>_params = %{start: 300, rotations: -1.5, hue: 1, gamma: 1, lightness: {0, 1}};
     iex>cubehelix = fn _x ->
-    ...>  Color.new(0, 0, 0)
+    ...>  Ultraviolet.Color.new(0, 0, 0)
     ...>end;
-    iex>{:ok, cubehelix} = Ultraviolet.scale(
+    iex>{:ok, _cubehelix} = Ultraviolet.scale(
     ...>  ["black", "white"],
-    ...>  interpolation: &cubehelix/1
+    ...>  interpolation: cubehelix
     ...>)
 
   ## Color Brewer
@@ -512,21 +549,9 @@ defmodule Ultraviolet do
   Ultraviolet includes the definitions from
   [ColorBrewer](https://colorbrewer2.org) as well.
 
-    iex>{:ok, scale} = Ultraviolet.scale("YlGnBu")
-    {:ok,
-     %Ultraviolet.Scale{
-       colors: [
-         %Ultraviolet.Color{r: 255, g: 255, b: 217, a: 1.0},
-         %Ultraviolet.Color{r: 237, g: 248, b: 177, a: 1.0},
-         %Ultraviolet.Color{r: 199, g: 233, b: 180, a: 1.0},
-         %Ultraviolet.Color{r: 127, g: 205, b: 187, a: 1.0},
-         %Ultraviolet.Color{r: 65, g: 182, b: 196, a: 1.0},
-         %Ultraviolet.Color{r: 29, g: 145, b: 192, a: 1.0},
-         %Ultraviolet.Color{r: 34, g: 94, b: 168, a: 1.0},
-         %Ultraviolet.Color{r: 37, g: 52, b: 148, a: 1.0},
-         %Ultraviolet.Color{r: 8, g: 29, b: 88, a: 1.0}
-       ]
-     }}
+    iex>{:ok, scale} = Ultraviolet.scale("OrRd");
+    iex>Enum.map(Ultraviolet.Scale.take(scale, 5), &Ultraviolet.Color.hex/1)
+    ["#fff7ec", "#fdd49e", "#fc8d59", "#d7301f", "#7f0000"]
 
   You can reverse the colors by reversing the domain:
 
@@ -540,17 +565,15 @@ defmodule Ultraviolet do
   to retrieve the Color Brewer palette with the given number of colors.
   The default is `9`.
 
-    iex>{:ok, scale} = Ultraviolet.scale("YlGnBu", count: 5)
-    {:ok,
-     %Ultraviolet.Scale{
-       colors: [
-         %Ultraviolet.Color{r: 255, g: 255, b: 204, a: 1.0},
-         %Ultraviolet.Color{r: 161, g: 218, b: 180, a: 1.0},
-         %Ultraviolet.Color{r: 65, g: 182, b: 196, a: 1.0},
-         %Ultraviolet.Color{r: 44, g: 127, b: 184, a: 1.0},
-         %Ultraviolet.Color{r: 37, g: 52, b: 148, a: 1.0}
-       ]
-     }}
+    iex>{:ok, scale} = Ultraviolet.scale("YlGnBu", count: 5);
+    iex> scale.colors
+    [
+      %Ultraviolet.Color{r: 255, g: 255, b: 204, a: 1.0},
+      %Ultraviolet.Color{r: 161, g: 218, b: 180, a: 1.0},
+      %Ultraviolet.Color{r: 65, g: 182, b: 196, a: 1.0},
+      %Ultraviolet.Color{r: 44, g: 127, b: 184, a: 1.0},
+      %Ultraviolet.Color{r: 37, g: 52, b: 148, a: 1.0}
+    ]
 
   """
   def scale(colors \\ ["white", "black"], options \\ [])
