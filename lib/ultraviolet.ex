@@ -1,8 +1,8 @@
 defmodule Ultraviolet do
   @moduledoc"""
-  Ultraviolet is a color manipulation library designed to function similarly to
-  `chroma-js`, except in Elixir. It may not have parity with `chroma-js`, but
-  it includes most of the common operations and features.
+  Ultraviolet is a color manipulation library designed to work like
+  [`chroma-js`](https://github.com/gka/chroma.js). It may not have full parity
+  with `chroma-js`, but it includes most of the common operations and features.
   """
   alias Ultraviolet.{Color, Scale, ColorBrewer}
   import Ultraviolet.Helpers
@@ -42,6 +42,8 @@ defmodule Ultraviolet do
 
   Any number between `0` and `16_777_215` will be recognized as a Color:
 
+      iex>Ultraviolet.new(0x000000)
+      {:ok, %Ultraviolet.Color{r: 0, g: 0, b: 0, a: 1.0}}
       iex>Ultraviolet.new(0xff3399)
       {:ok, %Ultraviolet.Color{r: 255, g: 51, b: 153, a: 1.0}}
 
@@ -89,7 +91,11 @@ defmodule Ultraviolet do
 
     iex>Ultraviolet.new(80, 40, 130, :lch)
     {:ok, %Ultraviolet.Color{r: 170, g: 210, b: 140, a: 1.0}}
+    iex>Ultraviolet.new(130, 40, 80, :hcl)
+    {:ok, %Ultraviolet.Color{r: 170, g: 210, b: 140, a: 1.0}}
     iex>Ultraviolet.new(%{l: 80, c: 40, h: 130}, :lch)
+    {:ok, %Ultraviolet.Color{r: 170, g: 210, b: 140, a: 1.0}}
+    iex>Ultraviolet.new(%{l: 80, c: 40, h: 130}, :hcl)
     {:ok, %Ultraviolet.Color{r: 170, g: 210, b: 140, a: 1.0}}
 
   #### OKLab
@@ -301,7 +307,7 @@ defmodule Ultraviolet do
     iex>Ultraviolet.Color.hex(color)
     "#ef9e4e"
 
-  Also works with alpha channels
+  Also works with alpha channels:
 
     iex>{:ok, color} = Ultraviolet.average(["red", %Ultraviolet.Color{r: 0, g: 0, b: 0, a: 0.0}])
     iex>Ultraviolet.Color.hex(color)
@@ -348,6 +354,18 @@ defmodule Ultraviolet do
     iex>{:ok, color} = Ultraviolet.blend("4cbbfc", "eeee22", :lighten);
     iex>Ultraviolet.Color.hex(color)
     "#eeeefc"
+    iex>{:ok, color} = Ultraviolet.blend("4cbbfc", "eeee22", :screen);
+    iex>Ultraviolet.Color.hex(color)
+    "#f3fafc"
+    iex>{:ok, color} = Ultraviolet.blend("4cbbfc", "eeee22", :overlay);
+    iex>Ultraviolet.Color.hex(color)
+    "#e7f643"
+    iex>{:ok, color} = Ultraviolet.blend("4cbbfc", "eeee22", :burn);
+    iex>Ultraviolet.Color.hex(color)
+    "#c6e81f"
+    iex>{:ok, color} = Ultraviolet.blend("4cbbfc", "eeee22", :dodge);
+    iex>Ultraviolet.Color.hex(color)
+    "#ffffff"
 
   """
   def blend(color, mask, mode) do

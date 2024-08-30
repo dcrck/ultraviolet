@@ -12,11 +12,14 @@ defmodule Ultraviolet.M3x3 do
   Generates a new 3x3 matrix
   """
   def new([[m00, m01, m02], [m10, m11, m12], [m20, m21, m22]]) do
-    %M3x3{
-      m00: D.new(m00), m01: D.new(m01), m02: D.new(m02),
-      m10: D.new(m10), m11: D.new(m11), m12: D.new(m12),
-      m20: D.new(m20), m21: D.new(m21), m22: D.new(m22),
-    }
+    struct(
+      M3x3,
+      [
+        m00: D.new(m00), m01: D.new(m01), m02: D.new(m02),
+        m10: D.new(m10), m11: D.new(m11), m12: D.new(m12),
+        m20: D.new(m20), m21: D.new(m21), m22: D.new(m22),
+      ]
+    )
   end
 
   @doc """

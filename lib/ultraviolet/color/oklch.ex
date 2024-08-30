@@ -15,6 +15,12 @@ defmodule Ultraviolet.Color.OKLCH do
   defguardp is_hue(h) when is_number(h) and h >= 0 and h <= 360
   defguardp is_normalized(n) when is_number(n) and n >= 0 and n <= 1.00001
 
+  @doc """
+  Generates a new OKLCH color object
+
+    iex>Ultraviolet.Color.OKLCH.new(0.5, 0.0, 60)
+    {:ok, %Ultraviolet.Color.OKLCH{h: 60, c: 0.0, l: 0.5}}
+  """
   def new(l, c, h), do: new(l, c, h, 1.0)
 
   def new(l, c, h, a)

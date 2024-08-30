@@ -13,6 +13,12 @@ defmodule Ultraviolet.Color.HSV do
   defguardp is_hue(h) when is_number(h) and h >= 0 and h <= 360
   defguardp is_normalized(n) when is_number(n) and n >= 0 and n <= 1
 
+  @doc """
+  Generates a new HSV color object
+
+    iex>Ultraviolet.Color.HSV.new(60, 0.0, 0.5)
+    {:ok, %Ultraviolet.Color.HSV{h: 60, s: 0.0, v: 0.5}}
+  """
   def new(h, s, v), do: new(h, s, v, 1.0)
 
   def new(h, s, v, a)

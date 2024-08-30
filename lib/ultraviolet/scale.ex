@@ -26,7 +26,6 @@ defmodule Ultraviolet.Scale do
   Creates a new color scale. See `Ultraviolet.scale/2` for details about
   creating scales.
   """
-  def new(), do: {:ok, struct(Scale)}
   def new(colors, options \\ []) when is_list(colors) and is_list(options) do
     with nil <- Enum.find(colors, &!match?(%{__struct__: Color}, &1)),
          {:ok, opts} <- validate_and_add_options(options, colors) do
@@ -138,8 +137,9 @@ defmodule Ultraviolet.Scale do
     {:ok, class / (length(classes) - 2)}
   end
 
-  defp classify(%{domain: [min | rest]}, x) do
-    {:ok, normalize_between(min, hd(Enum.reverse(rest)), x)}
+  defp classify(scale, x) do
+    {min, max} = domain_bounds(scale)
+    {:ok, normalize_between(min, max, x)}
   end
 
   defp normalize_between(min, max, _x) when max == min, do: 1
@@ -347,5 +347,7 @@ defmodule Ultraviolet.Scale do
   end
   defp even_steps(min, max, _n), do: [min, max]
 
+  defp domain_bounds(%{domain: []}), do: {0, 1}
+  defp domain_bounds(%{domain: [_]}), do: {0, 1}
   defp domain_bounds(%{domain: d}), do: {hd(d), hd(Enum.reverse(d))}
 end

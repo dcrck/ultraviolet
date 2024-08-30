@@ -133,6 +133,11 @@ defmodule Ultraviolet.Color do
     new(h, s, l, alpha: Map.get(hsl, :a, 1.0), mode: :hsl)
   end
 
+  def new(%{l_: l, a_: a, b_: b} = lab, mode, opts)
+  when mode in [:lab, :oklab] and is_list(opts) do
+    new(l, a, b, Keyword.merge(opts, alpha: Map.get(lab, :a, 1.0), mode: mode))
+  end
+
   def new(p1, p2, p3, options \\ [])
 
   def new(p1, p2, p3, options) when is_list(options) do
@@ -234,6 +239,13 @@ defmodule Ultraviolet.Color do
       {:ok, %Ultraviolet.Color.Lab{l_: 65.49, a_: 64.24, b_: -10.65}}
       iex> Ultraviolet.Color.into(color, :lab, reference: :f2)
       {:ok, %Ultraviolet.Color.Lab{l_: 66.28, a_: 61.45, b_: -8.62}}
+      # try going the other way now
+      iex> Ultraviolet.new(66.28, 61.45, -8.62, 1.0, :lab, reference: :f2)
+      {:ok, %Ultraviolet.Color{r: 255, g: 105, b: 180}}
+      iex> Ultraviolet.new(%{l_: 66.28, a_: 61.45, b_: -8.62}, :lab, reference: :f2)
+      {:ok, %Ultraviolet.Color{r: 255, g: 105, b: 180}}
+      iex> Ultraviolet.new(65.49, 64.24, -10.65, 1.0, :lab)
+      {:ok, %Ultraviolet.Color{r: 255, g: 105, b: 180}}
 
   ### LCH / HCL
 
@@ -251,6 +263,12 @@ defmodule Ultraviolet.Color do
       iex> Ultraviolet.Color.into(color, :oklab, round: 2)
       {:ok, %Ultraviolet.Color.OKLab{l_: 0.81, a_: -0.04, b_: 0.17}}
 
+  ### OKLCH
+
+      iex>{:ok, color} = Ultraviolet.Color.new("#aad28c")
+      {:ok, %Ultraviolet.Color{r: 170, g: 210, b: 140, a: 1.0}}
+      iex> Ultraviolet.Color.into(color, :oklch, round: 0)
+      {:ok, %Ultraviolet.Color.OKLCH{l: 1, c: 0, h: 132}}
   """
   def into(color, mode, options \\ [])
 
@@ -272,6 +290,12 @@ defmodule Ultraviolet.Color do
   when is_list(options) and lch_or_hcl in [:hcl, :lch] do
     LCH.from_rgb(color, options)
   end
+
+  def into(%Color{} = color, :oklch, options) when is_list(options) do
+    OKLCH.from_rgb(color, options)
+  end
+
+  def into(_, _, _), do: {:error, :invalid}
 
   @doc """
   Estimates the temperature of a given color, though this only makes sense for
@@ -583,7 +607,7 @@ defmodule Ultraviolet.Color do
   defp do_blend({color, _}, _), do: color
 
   @doc """
-  Returns the hexadecimal representation of an RGB color
+  Returns the hexadecimal representation of an RGB color.
 
   ## Examples
 
@@ -593,6 +617,12 @@ defmodule Ultraviolet.Color do
     "#ff0000"
     iex>Color.hex(%Color{r: 255, a: 0.5})
     "#ff000080"
+
+  You can also use `to_string` to output this value
+
+    iex>to_string(%Color{r: 255, a: 0.5})
+    "#ff000080"
+
   """
   def hex(%Color{r: r, g: g, b: b, a: 1.0}) do
     [r, g, b]

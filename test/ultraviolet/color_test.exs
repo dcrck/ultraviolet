@@ -20,4 +20,8 @@ defmodule ColorTest do
       assert Color.hex(color) == "#ff9900"
     end) 
   end
+
+  test "using color names doesn't work when directly calling the Color module functions" do
+    assert {:error, :invalid} == Color.blend("black", "white", :multiply)
+  end
 end

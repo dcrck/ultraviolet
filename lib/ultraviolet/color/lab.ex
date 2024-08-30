@@ -61,15 +61,18 @@ defmodule Ultraviolet.Color.Lab do
   def to_rgb(%Lab{} = lab, options \\ []) when is_list(options) do
     reference = Keyword.get(options, :reference, :d65)
     round = Keyword.get(options, :round, 0)
-    {:ok, whitepoint} = XYZ.whitepoint(reference)
-    {:ok, xyz} = lab_to_xyz(lab, Tuple.to_list(whitepoint))
-
-    xyz
-    |> XYZ.to_rgb(reference)
-    |> Enum.map(&(&1 * 255))
-    |> Enum.map(&clamp_to_byte/1)
-    |> Enum.map(&maybe_round(&1, round))
-    |> then(fn [r, g, b] -> Color.new(r, g, b, lab.a) end)
+    case XYZ.whitepoint(reference) do
+      {:ok, whitepoint} ->
+        lab
+        |> lab_to_xyz(Tuple.to_list(whitepoint))
+        |> then(fn {:ok, xyz} -> XYZ.to_rgb(xyz, reference) end)
+        |> Enum.map(&(&1 * 255))
+        |> Enum.map(&clamp_to_byte/1)
+        |> Enum.map(&maybe_round(&1, round))
+        |> then(fn [r, g, b] -> Color.new(r, g, b, lab.a) end)
+      error ->
+        error
+    end
   end
 
   @doc """

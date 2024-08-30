@@ -13,6 +13,12 @@ defmodule Ultraviolet.Color.LCH do
   defguardp is_hue(h) when is_number(h) and h >= 0 and h <= 360
   defguardp is_normalized(n) when is_number(n) and n >= 0 and n <= 1
 
+  @doc """
+  Generates a new LCH color object
+
+    iex>Ultraviolet.Color.LCH.new(0.5, 0.0, 60)
+    {:ok, %Ultraviolet.Color.LCH{h: 60, c: 0.0, l: 0.5}}
+  """
   def new(l, c, h), do: new(l, c, h, 1.0)
 
   def new(l, c, h, a)

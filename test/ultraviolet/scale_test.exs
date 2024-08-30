@@ -7,7 +7,7 @@ defmodule ScaleTest do
 
   describe "simple RGB scale (white -> black)" do
     setup do
-      {:ok, scale} = Ultraviolet.scale(["white", "black"])
+      {:ok, scale} = Ultraviolet.scale()
       {:ok, scale: scale}
     end
 
@@ -21,6 +21,33 @@ defmodule ScaleTest do
 
     test "ends with black", ctx do
       assert Color.hex(Scale.get(ctx.scale, 1)) == "#000000"
+    end
+  end
+
+  describe "RGB scale (white -> black), domain and classses checks" do
+    test "linearly interpolates with no classes" do
+      {:ok, scale} = Ultraviolet.scale(["black", "white"], classes: [])
+      assert Color.hex(Scale.get(scale, 0.5)) == "#808080"
+    end
+
+    test "linearly interpolates with one class" do
+      {:ok, scale} = Ultraviolet.scale(["black", "white"], classes: [1])
+      assert Color.hex(Scale.get(scale, 0.5)) == "#808080"
+    end
+
+    test "linearly interpolates with two classes" do
+      {:ok, scale} = Ultraviolet.scale(["black", "white"], classes: [0, 1])
+      assert Color.hex(Scale.get(scale, 0.5)) == "#808080"
+    end
+
+    test "linearly interpolates with no domain" do
+      {:ok, scale} = Ultraviolet.scale(["black", "white"], domain: [])
+      assert Color.hex(Scale.get(scale, 0.5)) == "#808080"
+    end
+
+    test "linearly interpolates with one-element domain" do
+      {:ok, scale} = Ultraviolet.scale(["black", "white"], domain: [1])
+      assert Color.hex(Scale.get(scale, 0.5)) == "#808080"
     end
   end
 
@@ -48,6 +75,10 @@ defmodule ScaleTest do
 
     test "returns the bounds when asked to take 2", ctx do
       assert Enum.map(Scale.take(ctx.scale, 2), &Color.hex/1) == ["#ffffff", "#000000"]
+    end
+
+    test "does not take invalid keys", ctx do
+      assert Enum.map(Scale.take(ctx.scale, [nil, 1]), &Color.hex/1) == ["#000000"]
     end
   end
 
@@ -275,6 +306,44 @@ defmodule ScaleTest do
     end
   end
 
+  describe "scale with gamma < 1" do
+    setup do
+      {:ok, scale} = Ultraviolet.scale("YlGn", count: 9, gamma: 0.5)
+      {:ok, scale: scale}
+    end
+
+    test "beginning is greener than expected", ctx do
+      assert Color.hex(Scale.get(ctx.scale, 0.1)) == "#c2e698"
+    end
+
+    test "middle is greener than expected", ctx do
+      assert Color.hex(Scale.get(ctx.scale, 0.5)) == "#2d914c"
+    end
+
+    test "end is the same", ctx do
+      assert Color.hex(Scale.get(ctx.scale, 1)) == "#004529"
+    end
+  end
+
+  describe "scale with gamma > 1" do
+    setup do
+      {:ok, scale} = Ultraviolet.scale("YlGn", count: 9, gamma: 2)
+      {:ok, scale: scale}
+    end
+
+    test "beginning is yellower than expected", ctx do
+      assert Color.hex(Scale.get(ctx.scale, 0.1)) == "#feffe1"
+    end
+
+    test "middle is yellower than expected", ctx do
+      assert Color.hex(Scale.get(ctx.scale, 0.5)) == "#d9f0a3"
+    end
+
+    test "end is the same", ctx do
+      assert Color.hex(Scale.get(ctx.scale, 1)) == "#004529"
+    end
+  end
+
   describe "scale with one color" do
     setup do
       {:ok, scale} = Ultraviolet.scale(["red"])
@@ -332,6 +401,17 @@ defmodule ScaleTest do
     test "matches at the end", ctx do
       assert Color.hex(Scale.get(ctx.scale1, 1)) ==
         Color.hex(Scale.get(ctx.scale2, 1))
+    end
+  end
+
+  describe "bezier scale with one color" do
+    setup do
+      {:ok, scale} = Ultraviolet.scale(["red"], interpolation: :bezier)
+      {:ok, scale: scale}
+    end
+
+    test "should return that color", ctx do
+      assert Color.hex(Scale.get(ctx.scale, 0.3)) == "#ff0000"
     end
   end
 
@@ -436,6 +516,35 @@ defmodule ScaleTest do
 
     test "ends with royalblue", ctx do
       assert Color.hex(Scale.get(ctx.scale, 1)) == "#4169e1"
+    end
+  end
+
+  describe "invalid cases:" do
+    test "if any colors are invalid, an error is returned" do
+      assert Ultraviolet.scale(["red", "unknown"]) ==
+        {:error, :invalid}
+    end
+
+    test "if a colorbrewer color is invalid, an error is returned" do
+      assert Ultraviolet.scale("unknown") ==
+        {:error, :not_found}
+    end
+  end
+
+  describe "bezier scale" do
+    test "is created in :oklab space" do
+      assert {:ok, _scale} = Ultraviolet.scale(
+        ["white", "black"],
+        interpolation: :bezier,
+        space: :lab
+      )
+    end
+    test "is created in :lab space" do
+      assert {:ok, _scale} = Ultraviolet.scale(
+        ["white", "black"],
+        interpolation: :bezier,
+        space: :oklab
+      )
     end
   end
 end

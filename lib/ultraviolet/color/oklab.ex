@@ -42,6 +42,10 @@ defmodule Ultraviolet.Color.OKLab do
   defguardp is_ok(n) when is_number(n) and n >= -1.00001 and n <= 1.00001
   @doc"""
   Generates a new OKLab color
+
+    iex>Ultraviolet.Color.OKLab.new(0.5, 0.0, 0.0)
+    {:ok, %Ultraviolet.Color.OKLab{l_: 0.5, a_: 0.0, b_: 0.0}}
+
   """
   def new(l, a, b), do: new(l, a, b, 1.0)
 

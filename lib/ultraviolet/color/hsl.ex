@@ -14,6 +14,9 @@ defmodule Ultraviolet.Color.HSL do
 
   @doc """
   Generates a new HSL color object
+
+    iex>Ultraviolet.Color.HSL.new(60, 0.0, 0.5)
+    {:ok, %Ultraviolet.Color.HSL{h: 60, s: 0.0, l: 0.5}}
   """
   def new(h, s, l), do: new(h, s, l, 1.0)
 
