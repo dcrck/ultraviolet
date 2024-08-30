@@ -81,7 +81,7 @@ defmodule Ultraviolet.Color.XYZ do
     case Map.fetch(@illuminants, reference) do
       # for now, y is always 1
       {:ok, {x, z}} -> {:ok, {x, D.new(1), z}}
-      _ -> {:error, "undefined reference point"}
+      :error -> {:error, "undefined reference point"}
     end
   end
 

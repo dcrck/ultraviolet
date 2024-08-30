@@ -210,7 +210,7 @@ defmodule Ultraviolet.Color do
         {value, ""} when is_byte(value) ->
           {:cont, [{key, value} | acc]}
 
-        _ ->
+        :error ->
           {:halt, {:error, "#{key} value must be a hex value between 0 and ff, got: #{hex}"}}
       end
     end)
@@ -606,10 +606,7 @@ defmodule Ultraviolet.Color do
   defp do_blend({255, _mask}, :dodge), do: 255
 
   defp do_blend({color, mask}, :dodge) do
-    case 255 * (mask / 255) / (1 - color / 255) do
-      a when a <= 255 -> a
-      _ -> 255
-    end
+    min(255 * (mask / 255) / (1 - color / 255), 255)
   end
 
   defp do_blend({color, _}, _), do: color

@@ -10,7 +10,7 @@ defmodule Ultraviolet.Helpers do
     |> Enum.map(condition)
     |> Enum.reduce_while([], fn
       {:ok, item}, acc -> {:cont, [item | acc]}
-      error, _ -> {:halt, error}
+      error, _acc -> {:halt, error}
     end)
     |> case do
       l when is_list(l) -> {:ok, Enum.reverse(l)}
@@ -33,7 +33,7 @@ defmodule Ultraviolet.Helpers do
         |> Enum.map(&String.to_integer/1)
         |> Ultraviolet.Color.new()
 
-      _ ->
+      nil ->
         {:error, :no_match}
     end
   end

@@ -382,7 +382,7 @@ defmodule Ultraviolet do
 
   - `Ultraviolet.Scale.get/3` to get a single color
   - `Ultraviolet.Scale.fetch/2` to fetch a single color
-  - `Ultraviolet.Scale.take/2` to get several colors at once
+  - `Ultraviolet.Scale.take/2` or `Ultraviolet.Scale.take_keys/2` to get several colors at once
 
   To see other access functions, see the `Ultraviolet.Scale` documentation.
 
@@ -399,13 +399,13 @@ defmodule Ultraviolet do
   will be evenly distributed along the gradient.
 
     iex>{:ok, scale} = Ultraviolet.scale(["yellow", "008ae5"]);
-    iex>Ultraviolet.Scale.take(scale, [0, 1])
+    iex>Ultraviolet.Scale.take_keys(scale, [0, 1])
     [
       %Ultraviolet.Color{r: 255, g: 255, b: 0},
       %Ultraviolet.Color{r: 0, g: 138, b: 229},
     ]
     iex>{:ok, scale} = Ultraviolet.scale(["yellow", "red", "black"]);
-    iex>Ultraviolet.Scale.take(scale, [0, 0.5, 1])
+    iex>Ultraviolet.Scale.take_keys(scale, [0, 0.5, 1])
     [
       %Ultraviolet.Color{r: 255, g: 255, b: 0},
       %Ultraviolet.Color{r: 255, g: 0, b: 0},
@@ -422,7 +422,7 @@ defmodule Ultraviolet do
   `[0, 1]`.
 
     iex>{:ok, scale} = Ultraviolet.scale(["yellow", "008ae5"], domain: [0, 100]);
-    iex>Enum.map(Ultraviolet.Scale.take(scale, [0, 100]), &Ultraviolet.Color.hex/1)
+    iex>Enum.map(Ultraviolet.Scale.take_keys(scale, [0, 100]), &Ultraviolet.Color.hex/1)
     ["#ffff00", "#008ae5"]
 
   You can use this option to set the exact positions of each color:
@@ -431,7 +431,7 @@ defmodule Ultraviolet do
     ...>  ["yellow", "lightgreen", "008ae5"],
     ...>  domain: [0, 0.25, 1]
     ...>);
-    iex>Enum.map(Ultraviolet.Scale.take(scale, [0, 0.25, 1]), &Ultraviolet.Color.hex/1)
+    iex>Enum.map(Ultraviolet.Scale.take_keys(scale, [0, 0.25, 1]), &Ultraviolet.Color.hex/1)
     ["#ffff00", "#90ee90", "#008ae5"]
 
   ### Color Space
@@ -514,7 +514,7 @@ defmodule Ultraviolet do
   will break up the scale into equidistant classes. 
 
     iex>{:ok, scale} = Ultraviolet.scale("OrRd", classes: 5);
-    iex>Enum.map(Ultraviolet.Scale.take(scale, [0.1, 0.15]), &Ultraviolet.Color.hex/1)
+    iex>Enum.map(Ultraviolet.Scale.take_keys(scale, [0.1, 0.15]), &Ultraviolet.Color.hex/1)
     ["#fff7ec", "#fff7ec"]
 
   You can also define custom class breaks by passing them as an array.
@@ -523,7 +523,7 @@ defmodule Ultraviolet do
     ...>  "OrRd",
     ...>  classes: [0, 0.3, 0.55, 0.85, 1]
     ...>);
-    iex>Enum.map(Ultraviolet.Scale.take(scale, [0.15, 0.25]), &Ultraviolet.Color.hex/1)
+    iex>Enum.map(Ultraviolet.Scale.take_keys(scale, [0.15, 0.25]), &Ultraviolet.Color.hex/1)
     ["#fff7ec", "#fff7ec"]
 
   The default value is `0`, meaning a continuous gradient will be used.

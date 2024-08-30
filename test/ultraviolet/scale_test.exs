@@ -83,7 +83,7 @@ defmodule ScaleTest do
     end
 
     test "does not take invalid keys", ctx do
-      assert Enum.map(Scale.take(ctx.scale, [nil, 1]), &Color.hex/1) == ["#000000"]
+      assert Enum.map(Scale.take_keys(ctx.scale, [nil, 1]), &Color.hex/1) == ["#000000"]
     end
   end
 

@@ -86,7 +86,9 @@ defmodule Ultraviolet.ColorBrewer do
               len = String.to_integer(count_str)
               def colors(unquote(name), unquote(len)), do: unquote(error)
 
-            _ ->
+            # there are other, non-integer keys in the JSON object, so we'll
+            # ignore those
+            :error ->
               :noop
           end
         end

@@ -160,7 +160,7 @@ defmodule Ultraviolet.Scale do
           x
         )
 
-      _ ->
+      _other_length ->
         {:ok, x}
     end
   end
@@ -319,22 +319,16 @@ defmodule Ultraviolet.Scale do
   def get(scale, x, default \\ %Color{}) do
     case fetch(scale, x) do
       {:ok, color} -> color
-      _ -> default
+      {:error, _} -> default
     end
   end
 
   @doc """
-  ### If `xs` is a list:
-
-  Returns a map with all the number/color pairs in `scale` where the number is
-  in `xs`. If `xs` contains values that are not within the `scale`'s domain,
-  they are clipped to the domain maximum.
-
-  ### If `xs` is a positive integer:
-
-  Returns a list of `xs` equi-distant colors from the scale.
+  Returns a list of colors that correspond to each value in `xs`. in `xs`. If
+  `xs` contains values that are not within the `scale`'s domain, they are
+  clipped to the domain bounds.
   """
-  def take(scale, xs) when is_list(xs) do
+  def take_keys(scale, xs) when is_list(xs) do
     xs
     |> Enum.flat_map(fn x ->
       case get(scale, x, nil) do
@@ -344,9 +338,12 @@ defmodule Ultraviolet.Scale do
     end)
   end
 
+  @doc """
+  Returns a list of `n` equi-distant colors from the `scale`.
+  """
   def take(%Scale{} = scale, n) when is_integer(n) do
     {min, max} = domain_bounds(scale)
-    take(scale, even_steps(min, max, n))
+    take_keys(scale, even_steps(min, max, n))
   end
 
   # n evenly spaced out values between `min` and `max`, inclusive
