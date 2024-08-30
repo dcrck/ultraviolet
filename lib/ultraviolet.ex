@@ -521,28 +521,67 @@ defmodule Ultraviolet do
   `{:ok, Ultraviolet.Color}` tuple.
 
   There are also two builtin interpolation options: `:linear` for linear
-  interpolation (the default) and `:bezier` for Bezier interpolation.
+  interpolation (the default) and `:bezier` for Bezier interpolation. For
+  `:bezier` interpolation, the `:space` must be either `:lab` or `:oklab`.
+  If no `:space` option is passed, `:lab` will be used.
 
-    iex>{:ok, _scale} = Ultraviolet.scale(
+    iex>{:ok, scale} = Ultraviolet.scale(["yellow", "red", "black"]);
+    iex>Enum.map(Ultraviolet.Scale.take(scale, 5), &Ultraviolet.Color.hex/1)
+    ["#ffff00", "#ff8000", "#ff0000", "#800000", "#000000"]
+    iex>Ultraviolet.scale(
+    ...>  ["yellow", "red", "black"],
+    ...>  interpolation: :bezier,
+    ...>  space: :rgb
+    ...>)
+    {:error, "bezier interpolation requires either Lab or OKLab colorspace"}
+    iex>{:ok, bezier_scale} = Ultraviolet.scale(
     ...>  ["yellow", "red", "black"],
     ...>  interpolation: :bezier
     ...>);
+    iex>Enum.map(Ultraviolet.Scale.take(bezier_scale, 5), &Ultraviolet.Color.hex/1)
+    ["#ffff00", "#f5a900", "#bf5e0b", "#6c280e", "#000000"]
 
   #### Example: `cubehelix`
 
   Here's how you might use this option to implement Dave Green's
   [cubehelix scheme](https://people.phy.cam.ac.uk/dag9/CUBEHELIX/):
 
-  TODO finish this example!
-
-    iex>_params = %{start: 300, rotations: -1.5, hue: 1, gamma: 1, lightness: {0, 1}};
-    iex>cubehelix = fn _x ->
-    ...>  Ultraviolet.Color.new(0, 0, 0)
+    iex>defmodule CubeHelix do
+    ...>  def interpolate(x, params) do
+    ...>    a = :math.tau() * ((params.start + 120) / 360 + params.rotations * x)
+    ...>    l = :math.pow(lightness(params) + dl(params) * x, params.gamma)
+    ...>    h = hue(params, x)
+    ...>    amp = (h * l * (1 - l)) / 2
+    ...>    cos_a = :math.cos(a)
+    ...>    sin_a = :math.sin(a)
+    ...>    [
+    ...>      l + amp * (-0.14861 * cos_a + 1.78277 * sin_a),
+    ...>      l + amp * (-0.29277 * cos_a - 0.90649 * sin_a),
+    ...>      l + amp * (1.97294 * cos_a)
+    ...>    ]
+    ...>    |> Enum.map(&clamp_byte(&1 * 255))
+    ...>    |> Ultraviolet.Color.new()
+    ...>  end
+    ...>
+    ...>  defp lightness(%{lightness: {l0, _}}), do: l0
+    ...>  defp lightness(%{lightness: l}), do: l
+    ...>
+    ...>  defp dl(%{lightness: {l0, l1}}), do: l1 - l0
+    ...>  defp dl(%{lightness: _}), do: 0
+    ...>
+    ...>  defp hue(%{hue: {h0, h1}}, x), do: h0 + x * (h1 - h0)
+    ...>  defp hue(%{hue: hue}, _x), do: hue
+    ...>
+    ...>  defp clamp_byte(n), do: min(max(n, 0), 255)
     ...>end;
-    iex>{:ok, _cubehelix} = Ultraviolet.scale(
+    iex>params = %{start: 300, rotations: -1.5, hue: 1, gamma: 1, lightness: {0, 1}};
+    iex>{:ok, cubehelix} = Ultraviolet.scale(
     ...>  ["black", "white"],
-    ...>  interpolation: cubehelix
-    ...>)
+    ...>  domain: [0, 1],
+    ...>  interpolation: fn x -> CubeHelix.interpolate(x, params) end
+    ...>);
+    iex>Enum.map(Ultraviolet.Scale.take(cubehelix, 5), &Ultraviolet.Color.hex/1)
+    ["#000000", "#16534c", "#a07949", "#c7b3ed", "#ffffff"]
 
   ## Color Brewer
 

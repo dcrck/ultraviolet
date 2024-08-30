@@ -43,9 +43,22 @@ defmodule Ultraviolet.Scale do
     options
     |> Enum.into(%{})
     |> Map.take([:space, :domain, :padding, :gamma, :correct_lightness?, :classes, :interpolation])
-    # TODO add more validations here
+    |> validate_interpolation()
     |> ok_if_no_error()
   end
+
+  defp validate_interpolation(%{interpolation: :bezier, space: :lab} = options), do: options
+  defp validate_interpolation(%{interpolation: :bezier, space: :oklab} = options), do: options
+
+  defp validate_interpolation(%{interpolation: :bezier, space: _space}) do
+    {:error, "bezier interpolation requires either Lab or OKLab colorspace"}
+  end
+
+  defp validate_interpolation(%{interpolation: :bezier} = options) do
+    Map.put(options, :space, :lab)
+  end
+
+  defp validate_interpolation(options), do: options
 
   defp add_color_positions(scale) do
     %{scale | positions: color_positions(scale)}
@@ -240,9 +253,22 @@ defmodule Ultraviolet.Scale do
     {:ok, color}
   end
 
-  defp interpolate(%{interpolation: :bezier, colors: colors}, x) do
-    {:ok, labs} = validate_all(colors, &Color.into(&1, :lab))
-    row = pascal_row(length(colors) - 1)
+  defp interpolate(%{interpolation: :bezier, colors: colors, space: space}, x)
+  when space in [:lab, :oklab] do
+    n = length(colors) - 1
+    {:ok, labs} = validate_all(colors, &Color.into(&1, space))
+
+    labs
+    |> Enum.zip(pascal_row(n))
+    |> Enum.with_index(fn {lab, coef}, index -> {index, lab, coef} end)
+    |> Enum.reduce([0, 0, 0], fn {i, lab, coef}, sums ->
+      [lab.l_, lab.a_, lab.b_]
+      |> Enum.zip(sums)
+      |> Enum.map(fn {ch, sum} ->
+        sum + coef * :math.pow(1 - x, n - i) * :math.pow(x, i) * ch
+      end)
+    end)
+    |> then(fn [l, a, b] -> Color.new(l, a, b, space) end)
   end
 
   defp interpolate(scale, x) do
