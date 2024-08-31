@@ -32,22 +32,58 @@ defmodule Ultraviolet.Color do
 
   @me __MODULE__
 
-  defstruct r: 0, g: 0, b: 0, a: 1.0
+  @space_to_module %{
+    hsl: HSL,
+    hsv: HSV,
+    lab: Lab,
+    lch: LCH,
+    hcl: LCH,
+    oklab: OKLab,
+    oklch: OKLCH
+  }
+  @typedoc """
+  A structure defining the channels in an sRGB Color.
 
-  # shortcut for checking valid rgba values
-  defguardp is_byte(n) when is_number(n) and n >= 0 and n <= 255
-  defguardp is_normalized(n) when is_number(n) and n >= 0 and n <= 1
+  This is the core Ultraviolet structure. See `Ultraviolet` for examples
+  of how it can be used.
+  """
+  @type t :: %{r: number(), g: number(), b: number(), a: number()}
+
+  @typedoc """
+  The available color spaces for transformation, interpolation, and scales.
+  """
+  @type space :: :rgb | :lrgb | :hsl | :lab | :lch | :hcl | :oklab | :oklch
+  @type space_t :: t() | HSL.t() | HSV.t() | Lab.t() | LCH.t() | OKLab.t() | OKLCH.t()
+
+  @typedoc """
+  Generic channel input for a color creation function.
+  """
+  @type channels :: [number()] | tuple() | [...] | map()
+
+  @typedoc """
+  Generic input for a color creation function.
+  """
+  @type input :: String.t() | integer() | channels() | t()
+
+  defstruct r: 0, g: 0, b: 0, a: 1.0
 
   # source of named colors
   @external_resource named_colors_path = Path.join([__DIR__, "named-colors.txt"])
 
+  @doc """
+  Generates a `Color` from a hex string, W3CX11 specification color name,
+  integer, or channel tuple/map/list/keyword list.
+
+  See `Ultraviolet.new/1` for more details.
+  """
+  @spec new(String.t() | integer() | [...] | map() | t()) ::
+          {:ok, t()} | {:error, term()}
   for line <- File.stream!(named_colors_path, [], :line) do
     [name, hex] = line |> String.split(" ") |> Enum.map(&String.trim/1)
 
     def new(unquote(name)), do: new(unquote(hex))
   end
 
-  # hexadecimal: leading '#' is optional
   def new("#" <> rest), do: new(rest)
 
   # normal hexadecimal
@@ -106,103 +142,51 @@ defmodule Ultraviolet.Color do
     {:ok, struct(@me, r: r, g: g, b: b)}
   end
 
-  # already a Color
-  def new(%Color{} = c), do: {:ok, c}
-
-  def new(_), do: {:error, :invalid}
-
-  # map + mode
-  def new(%{r: r, g: g, b: b} = rgb, mode) when mode in [:rgb, :lrgb] do
-    new(r, g, b, alpha: Map.get(rgb, :a, 1.0), mode: :rgb)
-  end
-
-  def new(%{l_: l, a_: a, b_: b} = lab, mode) when mode in [:lab, :oklab] do
-    new(l, a, b, alpha: Map.get(lab, :a, 1.0), mode: mode)
-  end
-
-  def new(%{l: l, c: c, h: h} = lch, mode) when mode in [:oklch, :lch] do
-    new(l, c, h, alpha: Map.get(lch, :a, 1.0), mode: mode)
-  end
-
-  def new(%{l: l, c: c, h: h} = hcl, :hcl) do
-    new(h, c, l, alpha: Map.get(hcl, :a, 1.0), mode: :hcl)
-  end
-
-  def new(%{v: v, s: s, h: h} = hsv, :hsv) do
-    new(h, s, v, alpha: Map.get(hsv, :a, 1.0), mode: :hsv)
-  end
-
-  def new(%{l: l, s: s, h: h} = hsl, :hsl) do
-    new(h, s, l, alpha: Map.get(hsl, :a, 1.0), mode: :hsl)
-  end
-
-  def new(%{l_: l, a_: a, b_: b} = lab, mode, opts)
-      when mode in [:lab, :oklab] and is_list(opts) do
-    new(l, a, b, Keyword.merge(opts, alpha: Map.get(lab, :a, 1.0), mode: mode))
-  end
-
-  def new(p1, p2, p3, options \\ [])
-
-  def new(p1, p2, p3, options) when is_list(options) do
-    {mode, options} = Keyword.pop(options, :mode, :rgb)
-    {a, options} = Keyword.pop(options, :alpha, 1.0)
-    new(p1, p2, p3, a, mode, options)
-  end
-
-  def new(p1, p2, p3, mode) when is_atom(mode), do: new(p1, p2, p3, mode: mode)
-  def new(p1, p2, p3, a) when is_normalized(a), do: new(p1, p2, p3, alpha: a)
-  def new(_, _, _, _), do: {:error, :invalid}
-
-  def new(p1, p2, p3, a, mode) when is_atom(mode) and is_normalized(a) do
-    new(p1, p2, p3, mode: mode, alpha: a)
-  end
-
-  def new(_, _, _, _, _), do: {:error, :invalid}
-
-  def new(r, g, b, a, :rgb, _options)
-      when is_normalized(a) and is_byte(r) and is_byte(g) and is_byte(b) do
+  def new([r, g, b, a])
+      when is_byte(r) and is_byte(g) and is_byte(b) and is_unit_interval(a) do
     {:ok, struct(@me, r: r, g: g, b: b, a: a)}
   end
 
-  def new(h, s, l, a, :hsl, _options) do
-    case HSL.new(h, s, l, a) do
-      {:ok, hsl} -> HSL.to_rgb(hsl)
-      error -> error
-    end
+  # tuple of RGB values
+  def new({r, g, b}) when is_byte(r) and is_byte(g) and is_byte(b) do
+    {:ok, struct(@me, r: r, g: g, b: b)}
   end
 
-  def new(h, s, v, a, :hsv, _options) do
-    case HSV.new(h, s, v, a) do
-      {:ok, hsv} -> HSV.to_rgb(hsv)
-      error -> error
-    end
+  def new({r, g, b, a})
+      when is_byte(r) and is_byte(g) and is_byte(b) and is_unit_interval(a) do
+    {:ok, struct(@me, r: r, g: g, b: b, a: a)}
   end
 
-  def new(l, a_star, b_star, a, :lab, options) when is_list(options) do
-    {:ok, lab} = Lab.new(l, a_star, b_star, a)
-    Lab.to_rgb(lab, options)
+  # already a Color
+  def new(%Color{} = c), do: {:ok, c}
+
+  # map of RGB values
+  def new(channels) when is_map(channels) do
+    new([
+      Map.get(channels, :r),
+      Map.get(channels, :g),
+      Map.get(channels, :b),
+      Map.get(channels, :a, 1.0)
+    ])
   end
 
-  def new(l, a_star, b_star, a, :oklab, options) when is_list(options) do
-    {:ok, lab} = OKLab.new(l, a_star, b_star, a)
-    OKLab.to_rgb(lab, options)
+  # keyword list of RGB values
+  def new([{k, _} | _rest] = channels) when is_list(channels) and is_atom(k) do
+    new(Enum.into(channels, %{}))
   end
 
-  def new(l, c, h, a, :lch, options) when is_list(options) do
-    {:ok, lch} = LCH.new(l, c, h, a)
-    LCH.to_rgb(lch, options)
-  end
+  def new(_), do: {:error, :invalid}
 
-  def new(l, c, h, a, :oklch, options) when is_list(options) do
-    {:ok, oklch} = OKLCH.new(l, c, h, a)
-    OKLCH.to_rgb(oklch, options)
-  end
+  @doc """
+  Creates a new `Color` from the given `input` and `options`.
 
-  def new(h, c, l, a, :hcl, options) when is_list(options) do
-    new(l, c, h, a, :lch, options)
+  See `Ultraviolet.new/2` for more details.
+  """
+  @spec new(channels(), [...]) :: {:ok, t()} | {:error, term()}
+  def new(channels, options) when is_list(options) do
+    {space, options} = Keyword.pop(options, :space, :rgb)
+    new_in_space(channels, space, options)
   end
-
-  def new(_, _, _, _, _, _), do: {:error, :invalid}
 
   defp parse_hex_list(arg_list) when is_list(arg_list) do
     Enum.reduce_while(arg_list, [], fn {key, hex}, acc ->
@@ -214,6 +198,34 @@ defmodule Ultraviolet.Color do
           {:halt, {:error, "#{key} value must be a hex value between 0 and ff, got: #{hex}"}}
       end
     end)
+  end
+
+  defp new_in_space(channels, space, _opts) when space in [:rgb, :lrgb] do
+    new(channels)
+  end
+
+  # reverse HCL channels in these cases
+  defp new_in_space({h, c, l}, :hcl, opts) do
+    new_in_space({l, c, h}, :lch, opts)
+  end
+
+  defp new_in_space({h, c, l, a}, :hcl, opts) do
+    new_in_space({l, c, h, a}, :lch, opts)
+  end
+
+  defp new_in_space([h, c, l], :hcl, opts) when is_number(h) do
+    new_in_space([l, c, h], :lch, opts)
+  end
+
+  defp new_in_space([h, c, l, a], :hcl, opts) when is_number(h) do
+    new_in_space([l, c, h, a], :lch, opts)
+  end
+
+  defp new_in_space(channels, other, opts) do
+    with {:ok, module} <- Map.fetch(@space_to_module, other),
+         {:ok, color} <- module.new(channels) do
+      module.to_rgb(color, opts)
+    end
   end
 
   @doc """
@@ -244,11 +256,11 @@ defmodule Ultraviolet.Color do
       iex> Ultraviolet.Color.into(color, :lab, reference: :f2)
       {:ok, %Ultraviolet.Color.Lab{l_: 66.28, a_: 61.45, b_: -8.62}}
       # try going the other way now
-      iex> Ultraviolet.new(66.28, 61.45, -8.62, 1.0, :lab, reference: :f2)
+      iex> Ultraviolet.new({66.28, 61.45, -8.62, 1.0}, space: :lab, reference: :f2)
       {:ok, %Ultraviolet.Color{r: 255, g: 105, b: 180}}
-      iex> Ultraviolet.new(%{l_: 66.28, a_: 61.45, b_: -8.62}, :lab, reference: :f2)
+      iex> Ultraviolet.new(%{l_: 66.28, a_: 61.45, b_: -8.62}, space: :lab, reference: :f2)
       {:ok, %Ultraviolet.Color{r: 255, g: 105, b: 180}}
-      iex> Ultraviolet.new(65.49, 64.24, -10.65, 1.0, :lab)
+      iex> Ultraviolet.new({65.49, 64.24, -10.65, 1.0}, space: :lab)
       {:ok, %Ultraviolet.Color{r: 255, g: 105, b: 180}}
 
   ### LCH / HCL
@@ -276,30 +288,18 @@ defmodule Ultraviolet.Color do
       iex> Ultraviolet.Color.into(color, :oklch, round: 1)
       {:ok, %Ultraviolet.Color.OKLCH{l: 0.8, c: 0.1, h: 132.5}}
   """
-  def into(color, mode, options \\ [])
+  @spec into(t(), space()) :: {:ok, space_t()} | {:error, term()}
+  @spec into(t(), space(), [...]) :: {:ok, space_t()} | {:error, term()}
+  def into(color, space, options \\ [])
 
   def into(%Color{} = color, rgb, _options) when rgb in [:rgb, :lrgb] do
     {:ok, color}
   end
 
-  def into(%Color{} = color, :hsl, _options), do: HSL.from_rgb(color)
-  def into(%Color{} = color, :hsv, _options), do: HSV.from_rgb(color)
-
-  def into(%Color{} = color, :lab, options) when is_list(options) do
-    Lab.from_rgb(color, options)
-  end
-
-  def into(%Color{} = color, :oklab, options) when is_list(options) do
-    OKLab.from_rgb(color, options)
-  end
-
-  def into(%Color{} = color, lch_or_hcl, options)
-      when is_list(options) and lch_or_hcl in [:hcl, :lch] do
-    LCH.from_rgb(color, options)
-  end
-
-  def into(%Color{} = color, :oklch, options) when is_list(options) do
-    OKLCH.from_rgb(color, options)
+  def into(%Color{} = color, space, options) when is_list(options) do
+    with {:ok, module} <- Map.fetch(@space_to_module, space) do
+      module.from_rgb(color, options)
+    end
   end
 
   def into(_, _, _), do: {:error, :invalid}
@@ -310,40 +310,49 @@ defmodule Ultraviolet.Color do
 
   ## Examples
 
-    iex> {:ok, color} = Color.new("#ff3300");
-    iex> Color.temperature(color)
-    1000
-    iex> {:ok, color} = Color.new("#ff8a13");
-    iex> Color.temperature(color)
-    2000
-    iex> {:ok, color} = Color.new("#ffe3cd");
-    iex> Color.temperature(color)
-    4985
-    iex> {:ok, color} = Color.new("#cbdbff");
-    iex> Color.temperature(color)
-    10049
-    iex> {:ok, color} = Color.new("#b3ccff");
-    iex> Color.temperature(color)
-    15005
+      iex> {:ok, color} = Color.new("#ff3300");
+      iex> Color.temperature(color)
+      1000
+      iex> {:ok, color} = Color.new("#ff8a13");
+      iex> Color.temperature(color)
+      2000
+      iex> {:ok, color} = Color.new("#ffe3cd");
+      iex> Color.temperature(color)
+      4985
+      iex> {:ok, color} = Color.new("#cbdbff");
+      iex> Color.temperature(color)
+      10049
+      iex> {:ok, color} = Color.new("#b3ccff");
+      iex> Color.temperature(color)
+      15005
 
   """
   def temperature(%Color{} = color), do: Temperature.from_rgb(color)
 
   @doc """
-  Get or set the color opacity.
+  Get the color opacity.
 
   ## Examples
 
-    iex> {:ok, color} = Color.new("red");
-    iex> color = Color.alpha(color, 0.5)
-    %Color{r: 255, g: 0, b: 0, a: 0.5}
-    iex> Color.alpha(color)
-    0.5
+      iex> {:ok, color} = Color.new("red");
+      iex> Color.alpha(color)
+      1.0
   """
   # this works because all Color structs use `:a` for opacity
+  @spec alpha(space_t()) :: number()
   def alpha(%{a: a} = color) when is_struct(color), do: a
 
-  def alpha(color, alpha) when is_struct(color) and is_normalized(alpha) do
+  @doc """
+  Set the color opacity.
+
+  ## Examples
+
+      iex> {:ok, color} = Color.new("red");
+      iex> Color.alpha(color, 0.5)
+      %Color{r: 255, g: 0, b: 0, a: 0.5}
+  """
+  @spec alpha(space_t(), number()) :: space_t()
+  def alpha(color, alpha) when is_struct(color) and is_unit_interval(alpha) do
     %{color | a: alpha}
   end
 
@@ -355,15 +364,16 @@ defmodule Ultraviolet.Color do
 
   ## Examples
 
-    iex> {:ok, color} = Color.new("hotpink");
-    iex> Color.hex(Color.brighten!(color))
-    "#ff9ce6"
-    iex> Color.hex(Color.brighten!(color, 2))
-    "#ffd1ff"
-    iex> Color.hex(Color.brighten!(color, 3))
-    "#ffffff"
+      iex> {:ok, color} = Color.new("hotpink");
+      iex> Color.hex(Color.brighten!(color))
+      "#ff9ce6"
+      iex> Color.hex(Color.brighten!(color, 2))
+      "#ffd1ff"
+      iex> Color.hex(Color.brighten!(color, 3))
+      "#ffffff"
 
   """
+  @spec brighten!(t(), number()) :: t()
   def brighten!(%Color{} = color, amount \\ 1) do
     color
     |> into(:lab)
@@ -378,15 +388,16 @@ defmodule Ultraviolet.Color do
 
   ## Examples
 
-    iex> {:ok, color} = Color.new("hotpink");
-    iex> Color.hex(Color.darken!(color))
-    "#c93384"
-    iex> Color.hex(Color.darken!(color, 2))
-    "#940058"
-    iex> Color.hex(Color.darken!(color, 2.6))
-    "#74003f"
+      iex> {:ok, color} = Color.new("hotpink");
+      iex> Color.hex(Color.darken!(color))
+      "#c93384"
+      iex> Color.hex(Color.darken!(color, 2))
+      "#940058"
+      iex> Color.hex(Color.darken!(color, 2.6))
+      "#74003f"
 
   """
+  @spec darken!(t(), number()) :: t()
   def darken!(%Color{} = color, amount \\ 1), do: brighten!(color, -amount)
 
   @doc """
@@ -394,14 +405,15 @@ defmodule Ultraviolet.Color do
 
   ## Examples
 
-    iex> {:ok, color} = Color.new("slategray");
-    iex> Color.hex(Color.saturate!(color))
-    "#4b83ae"
-    iex> Color.hex(Color.saturate!(color, 2))
-    "#0087cd"
-    iex> Color.hex(Color.saturate!(color, 3))
-    "#008bec"
+      iex> {:ok, color} = Color.new("slategray");
+      iex> Color.hex(Color.saturate!(color))
+      "#4b83ae"
+      iex> Color.hex(Color.saturate!(color, 2))
+      "#0087cd"
+      iex> Color.hex(Color.saturate!(color, 3))
+      "#008bec"
   """
+  @spec saturate!(t(), number()) :: t()
   def saturate!(%Color{} = color, amount \\ 1) do
     color
     |> into(:lch)
@@ -416,14 +428,15 @@ defmodule Ultraviolet.Color do
 
   ## Examples
 
-    iex> {:ok, color} = Color.new("hotpink");
-    iex> Color.hex(Color.desaturate!(color))
-    "#e77dae"
-    iex> Color.hex(Color.desaturate!(color, 2))
-    "#cd8ca8"
-    iex> Color.hex(Color.desaturate!(color, 3))
-    "#b199a3"
+      iex> {:ok, color} = Color.new("hotpink");
+      iex> Color.hex(Color.desaturate!(color))
+      "#e77dae"
+      iex> Color.hex(Color.desaturate!(color, 2))
+      "#cd8ca8"
+      iex> Color.hex(Color.desaturate!(color, 3))
+      "#b199a3"
   """
+  @spec desaturate!(t(), number()) :: t()
   def desaturate!(%Color{} = color, amount \\ 1), do: saturate!(color, -amount)
 
   @doc """
@@ -432,17 +445,20 @@ defmodule Ultraviolet.Color do
 
   ## Examples
 
-    iex>{:ok, color} = Color.new("hotpink");
-    iex> Color.hex(Color.shade!(color, 0.25))
-    "#dd5b9c"
-    iex> Color.hex(Color.shade!(color, 0.5))
-    "#b44a7f"
-    iex> Color.hex(Color.shade!(color, 0.75))
-    "#80355a"
+      iex>{:ok, color} = Color.new("hotpink");
+      iex> Color.hex(Color.shade!(color, 0.25))
+      "#dd5b9c"
+      iex> Color.hex(Color.shade!(color, 0.5))
+      "#b44a7f"
+      iex> Color.hex(Color.shade!(color, 0.75))
+      "#80355a"
   """
-  def shade!(color, ratio \\ 0.5, mode \\ :lrgb) do
+  @spec shade!(t()) :: t()
+  @spec shade!(t(), number()) :: t()
+  @spec shade!(t(), number(), space()) :: t()
+  def shade!(color, ratio \\ 0.5, space \\ :lrgb) do
     color
-    |> mix(%Color{r: 0, g: 0, b: 0}, ratio, mode)
+    |> mix(%Color{r: 0, g: 0, b: 0}, ratio, space)
     |> ok!()
   end
 
@@ -452,17 +468,20 @@ defmodule Ultraviolet.Color do
 
   ## Examples
 
-    iex>{:ok, color} = Color.new("hotpink");
-    iex> Color.hex(Color.tint!(color, 0.25))
-    "#ff9dc9"
-    iex> Color.hex(Color.tint!(color, 0.5))
-    "#ffc3dd"
-    iex> Color.hex(Color.tint!(color, 0.75))
-    "#ffe3ee"
+      iex>{:ok, color} = Color.new("hotpink");
+      iex> Color.hex(Color.tint!(color, 0.25))
+      "#ff9dc9"
+      iex> Color.hex(Color.tint!(color, 0.5))
+      "#ffc3dd"
+      iex> Color.hex(Color.tint!(color, 0.75))
+      "#ffe3ee"
   """
-  def tint!(color, ratio \\ 0.5, mode \\ :lrgb) do
+  @spec tint!(t()) :: t()
+  @spec tint!(t(), number()) :: t()
+  @spec tint!(t(), number(), space()) :: t()
+  def tint!(color, ratio \\ 0.5, space \\ :lrgb) do
     color
-    |> mix(%Color{r: 255, g: 255, b: 255}, ratio, mode)
+    |> mix(%Color{r: 255, g: 255, b: 255}, ratio, space)
     |> ok!()
   end
 
@@ -471,42 +490,50 @@ defmodule Ultraviolet.Color do
 
   See `Ultraviolet.mix/4` for documentation and examples.
   """
-  def mix(color, target, weight \\ 0.5, mode \\ :lrgb)
+  @spec mix(t(), t()) :: {:ok, t()} | {:error, term()}
+  @spec mix(t(), t(), number()) :: {:ok, t()} | {:error, term()}
+  @spec mix(t(), t(), number(), space()) :: {:ok, t()} | {:error, term()}
+  # coveralls-ignore-next-line
+  def mix(color, target, weight \\ 0.5, space \\ :lrgb)
 
-  def mix(_color, _target, w, _mode) when not is_normalized(w) do
+  def mix(_color, _target, w, _space) when not is_unit_interval(w) do
     {:error, "expected a ratio between 0 and 1, got: #{w}"}
   end
 
-  def mix(color, target, w, mode) do
-    average(color, [target], mode, [1 - w, w])
+  def mix(color, target, w, space) do
+    average(color, [target], space, [1 - w, w])
   end
 
   @doc """
   Mixes several colors. If `weights` are given, a weighted average is
   calculated; the number of `weights` must equal the number of colors.
 
-  See `Ultraviolet.average/4` for documentation and examples.
+  See `Ultraviolet.average/3` for documentation and examples.
   """
-  def average(color, targets, mode \\ :lrgb, weights \\ nil)
+  @spec average(t(), [t()]) :: {:ok, t()} | {:error, term()}
+  @spec average(t(), [t()], space()) :: {:ok, t()} | {:error, term()}
+  @spec average(t(), [t()], space(), [number()] | nil) :: {:ok, t()} | {:error, term()}
+  # coveralls-ignore-next-line
+  def average(color, targets, space \\ :lrgb, weights \\ nil)
 
-  def average(color, targets, mode, nil) do
-    average(color, targets, mode, Enum.map([color | targets], fn _ -> 1 end))
+  def average(color, targets, space, nil) do
+    average(color, targets, space, Enum.map([color | targets], fn _ -> 1 end))
   end
 
-  def average(color, targets, mode, weights) do
-    case validate_all([color | targets], &into(&1, mode)) do
+  def average(color, targets, space, weights) do
+    case validate_all([color | targets], &into(&1, space)) do
       {:ok, color_list} ->
         color_list
         |> Enum.map(&Map.from_struct/1)
         |> Enum.zip_with(& &1)
-        |> Enum.map(&weighted_average(&1, normalize(weights), mode))
+        |> Enum.map(&weighted_average(&1, normalize(weights), space))
         |> List.flatten()
         |> Enum.reduce(%{}, fn {k, v}, m ->
           Map.update(m, k, v, &tuple_sum(&1, v))
         end)
-        |> Enum.map(&consolidate(&1, mode))
+        |> Enum.map(&consolidate(&1, space))
         |> Enum.into(%{})
-        |> new(mode)
+        |> new(space: space)
 
       error ->
         error
@@ -519,14 +546,14 @@ defmodule Ultraviolet.Color do
     |> then(&Enum.map(values, fn v -> v / &1 end))
   end
 
-  defp weighted_average(components, weights, mode) do
+  defp weighted_average(components, weights, space) do
     components
     |> Enum.zip(weights)
-    |> Enum.map(&channel_with_weight(&1, mode))
+    |> Enum.map(&channel_with_weight(&1, space))
   end
 
   # alpha channel is always a simple weighted average
-  defp channel_with_weight({{:a, value}, weight}, _mode) do
+  defp channel_with_weight({{:a, value}, weight}, _space) do
     {:a, weight * value}
   end
 
@@ -535,12 +562,12 @@ defmodule Ultraviolet.Color do
   end
 
   # since hues are angles, we need to use a different weighted average
-  defp channel_with_weight({{:h, degrees}, weight}, _mode) do
+  defp channel_with_weight({{:h, degrees}, weight}, _space) do
     radians = degrees * :math.pi() / 180
     {:h, {:math.cos(radians) * weight, :math.sin(radians) * weight}}
   end
 
-  defp channel_with_weight({{channel, value}, weight}, _mode) do
+  defp channel_with_weight({{channel, value}, weight}, _space) do
     {channel, weight * value}
   end
 
@@ -551,33 +578,36 @@ defmodule Ultraviolet.Color do
 
   # the final step...
   # alpha channel is always a simple weighted average
-  defp consolidate({:a, v}, _mode), do: {:a, v}
+  defp consolidate({:a, v}, _space), do: {:a, v}
   defp consolidate({k, v}, :lrgb), do: {k, clamp_to_byte(:math.sqrt(v))}
   defp consolidate({k, v}, :rgb), do: {k, clamp_to_byte(v)}
 
-  defp consolidate({:h, {cos, sin}}, _mode) do
+  defp consolidate({:h, {cos, sin}}, _space) do
     {:h, maybe_correct_hue(:math.atan2(sin, cos) * 180 / :math.pi())}
   end
 
-  defp consolidate({k, v}, _mode), do: {k, v}
+  defp consolidate({k, v}, _space), do: {k, v}
 
   defp maybe_correct_hue(h) when h < 0, do: maybe_correct_hue(h + 360)
   defp maybe_correct_hue(h) when h > 360, do: maybe_correct_hue(h - 360)
   defp maybe_correct_hue(h), do: h
 
-  defp clamp_to_byte(n), do: min(max(n, 0), 255)
+  @type blend_mode ::
+          :normal | :multiply | :darken | :lighten | :screen | :overlay | :burn | :dodge
 
   @doc """
   Blends two colors using RGB channel-wise blend functions. See
-  `Ultraviolet.blend/3` for examples and valid blend modes.
+  `Ultraviolet.blend/3` for examples and valid blend spaces.
   """
-  def blend(color, mask, mode \\ :normal)
+  @spec blend(t(), t()) :: {:ok, t()} | {:error, term()}
+  @spec blend(t(), t(), blend_mode()) :: {:ok, t()} | {:error, term()}
+  def blend(color, mask, blend_mode \\ :normal)
 
-  def blend(%Color{} = color, %Color{} = mask, mode) do
+  def blend(%Color{} = color, %Color{} = mask, blend_mode) do
     [color, mask]
     |> Enum.map(&[&1.r, &1.g, &1.b])
     |> Enum.zip()
-    |> Enum.map(&do_blend(&1, mode))
+    |> Enum.map(&do_blend(&1, blend_mode))
     |> new()
   end
 
@@ -616,19 +646,20 @@ defmodule Ultraviolet.Color do
 
   ## Examples
 
-    iex>Color.hex(%Color{})
-    "#000000"
-    iex>Color.hex(%Color{r: 255})
-    "#ff0000"
-    iex>Color.hex(%Color{r: 255, a: 0.5})
-    "#ff000080"
+      iex>Color.hex(%Color{})
+      "#000000"
+      iex>Color.hex(%Color{r: 255})
+      "#ff0000"
+      iex>Color.hex(%Color{r: 255, a: 0.5})
+      "#ff000080"
 
   You can also use `to_string` to output this value
 
-    iex>to_string(%Color{r: 255, a: 0.5})
-    "#ff000080"
+      iex>to_string(%Color{r: 255, a: 0.5})
+      "#ff000080"
 
   """
+  @spec hex(t()) :: String.t()
   def hex(%Color{r: r, g: g, b: b, a: 1.0}) do
     [r, g, b]
     |> Enum.map(&to_hex/1)
@@ -652,13 +683,14 @@ defmodule Ultraviolet.Color do
 
   ## Examples
 
-    iex>Color.css(%Color{})
-    "rgb(0 0 0)"
-    iex>Color.css(%Color{r: 255})
-    "rgb(255 0 0)"
-    iex>Color.css(%Color{r: 255, a: 0.5})
-    "rgb(255 0 0 / 0.5)"
+      iex>Color.css(%Color{})
+      "rgb(0 0 0)"
+      iex>Color.css(%Color{r: 255})
+      "rgb(255 0 0)"
+      iex>Color.css(%Color{r: 255, a: 0.5})
+      "rgb(255 0 0 / 0.5)"
   """
+  @spec css(t()) :: String.t()
   def css(%Color{r: r, g: g, b: b, a: 1.0}) do
     [r, g, b]
     |> Enum.map(&round/1)

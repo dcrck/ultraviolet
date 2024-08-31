@@ -31,40 +31,40 @@ defmodule Ultraviolet.ColorBrewer do
   @doc """
   Retrieves the colorbrewer colors associated with the given name.
 
-    iex>Ultraviolet.ColorBrewer.colors("Spectral")
-    {:ok,
-     [
-       %Ultraviolet.Color{r: 213, g: 62, b: 79, a: 1.0},
-       %Ultraviolet.Color{r: 244, g: 109, b: 67, a: 1.0},
-       %Ultraviolet.Color{r: 253, g: 174, b: 97, a: 1.0},
-       %Ultraviolet.Color{r: 254, g: 224, b: 139, a: 1.0},
-       %Ultraviolet.Color{r: 255, g: 255, b: 191, a: 1.0},
-       %Ultraviolet.Color{r: 230, g: 245, b: 152, a: 1.0},
-       %Ultraviolet.Color{r: 171, g: 221, b: 164, a: 1.0},
-       %Ultraviolet.Color{r: 102, g: 194, b: 165, a: 1.0},
-       %Ultraviolet.Color{r: 50, g: 136, b: 189, a: 1.0}
-     ]}
+      iex>Ultraviolet.ColorBrewer.colors("Spectral")
+      {:ok,
+       [
+         %Ultraviolet.Color{r: 213, g: 62, b: 79, a: 1.0},
+         %Ultraviolet.Color{r: 244, g: 109, b: 67, a: 1.0},
+         %Ultraviolet.Color{r: 253, g: 174, b: 97, a: 1.0},
+         %Ultraviolet.Color{r: 254, g: 224, b: 139, a: 1.0},
+         %Ultraviolet.Color{r: 255, g: 255, b: 191, a: 1.0},
+         %Ultraviolet.Color{r: 230, g: 245, b: 152, a: 1.0},
+         %Ultraviolet.Color{r: 171, g: 221, b: 164, a: 1.0},
+         %Ultraviolet.Color{r: 102, g: 194, b: 165, a: 1.0},
+         %Ultraviolet.Color{r: 50, g: 136, b: 189, a: 1.0}
+       ]}
 
   You can also pass in an optional second argument to return a set number of
   colors for a given colorbrewer palette:
 
-    iex>Ultraviolet.ColorBrewer.colors("Spectral", 3)
-    {:ok,
-     [
-       %Ultraviolet.Color{r: 252, g: 141, b: 89, a: 1.0},
-       %Ultraviolet.Color{r: 255, g: 255, b: 191, a: 1.0},
-       %Ultraviolet.Color{r: 153, g: 213, b: 148, a: 1.0}
-     ]}
+      iex>Ultraviolet.ColorBrewer.colors("Spectral", 3)
+      {:ok,
+       [
+         %Ultraviolet.Color{r: 252, g: 141, b: 89, a: 1.0},
+         %Ultraviolet.Color{r: 255, g: 255, b: 191, a: 1.0},
+         %Ultraviolet.Color{r: 153, g: 213, b: 148, a: 1.0}
+       ]}
 
   Unknown color palettes, or if you pass in an invalid color count for a given
   palette, will return an error tuple.
 
-    iex>Ultraviolet.ColorBrewer.colors("Accent", 9)
-    {:error, :not_found}
-    iex>Ultraviolet.ColorBrewer.colors("Set3", -1)
-    {:error, :not_found}
-    iex>Ultraviolet.ColorBrewer.colors("UnknownPalette", 5)
-    {:error, :not_found}
+      iex>Ultraviolet.ColorBrewer.colors("Accent", 9)
+      {:error, :not_found}
+      iex>Ultraviolet.ColorBrewer.colors("Set3", -1)
+      {:error, :not_found}
+      iex>Ultraviolet.ColorBrewer.colors("UnknownPalette", 5)
+      {:error, :not_found}
 
   **Note**: This function requires the `:jason` optional dependency to use. If
   `Jason` is not installed, all calls to `colors/1` or `colors/2` will return

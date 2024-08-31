@@ -7,24 +7,69 @@ defmodule Ultraviolet.Color.OKLCH do
   Uses the `:d65` reference illuminant.
   """
   defstruct l: 0, c: 0, h: 0, a: 1.0
+  @type t :: %{l: number(), c: number(), h: number(), a: number()}
 
   alias Ultraviolet.Color
   alias Ultraviolet.Color.OKLab
   alias __MODULE__
 
-  defguardp is_hue(h) when is_number(h) and h >= 0 and h <= 360
-  defguardp is_normalized(n) when is_number(n) and n >= 0 and n <= 1.00001
+  import Ultraviolet.Helpers,
+    only: [
+      maybe_round: 2,
+      is_angle: 1,
+      is_unit_interval: 1,
+      deg_to_rad: 1,
+      rad_to_deg: 1
+    ]
+
+  @doc """
+  Generates a new LCH color
+
+      iex>Ultraviolet.Color.LCH.new({0.5, 0.0, 60})
+      {:ok, %Ultraviolet.Color.LCH{h: 60, c: 0.0, l: 0.5}}
+
+  """
+  @spec new(tuple() | [number()] | map() | [...]) :: {:ok, t()}
+  def new({l, c, h}), do: new(l, c, h, 1.0)
+  def new({l, c, h, a}), do: new(l, c, h, a)
+  def new([l, c, h]) when is_number(l), do: new(l, c, h, 1.0)
+  def new([l, c, h, a]) when is_number(l), do: new(l, c, h, a)
+
+  # map of channel values
+  def new(channels) when is_map(channels) do
+    new([
+      Map.get(channels, :l),
+      Map.get(channels, :c),
+      Map.get(channels, :h),
+      Map.get(channels, :a, 1.0)
+    ])
+  end
+
+  # keyword list of channel values
+  def new([{k, _} | _rest] = channels) when is_list(channels) and is_atom(k) do
+    new(Enum.into(channels, %{}))
+  end
 
   @doc """
   Generates a new OKLCH color object
 
-    iex>Ultraviolet.Color.OKLCH.new(0.5, 0.0, 60)
-    {:ok, %Ultraviolet.Color.OKLCH{h: 60, c: 0.0, l: 0.5}}
+      iex>Ultraviolet.Color.OKLCH.new(0.5, 0.0, 60)
+      {:ok, %Ultraviolet.Color.OKLCH{h: 60, c: 0.0, l: 0.5}}
+
   """
+  @spec new(number(), number(), number()) :: {:ok, t()}
   def new(l, c, h), do: new(l, c, h, 1.0)
 
+  @doc """
+  Generates a new OKLCH color object
+
+      iex>Ultraviolet.Color.OKLCH.new(0.5, 0.0, 60, 0.5)
+      {:ok, %Ultraviolet.Color.OKLCH{h: 60, c: 0.0, l: 0.5, a: 0.5}}
+
+  """
+  @spec new(number(), number(), number(), number()) :: {:ok, t()}
   def new(l, c, h, a)
-      when is_hue(h) and is_normalized(l) and is_normalized(c) and is_normalized(a) do
+      when is_angle(h) and is_unit_interval(l) and is_unit_interval(c) and is_unit_interval(a) do
     {:ok, struct(OKLCH, h: h, c: c, l: l, a: a)}
   end
 
@@ -35,9 +80,10 @@ defmodule Ultraviolet.Color.OKLCH do
 
     - `:round`: an integer if rounding r, g, and b channel values to N decimal
       places is desired; if no rounding is desired, pass `false`. Default: `0`
+
   """
   def to_rgb(%OKLCH{} = lch, options \\ []) when is_list(options) do
-    case lch_to_oklab(lch) do
+    case oklch_to_oklab(lch) do
       {:ok, oklab} -> OKLab.to_rgb(oklab, options)
       error -> error
     end
@@ -50,26 +96,24 @@ defmodule Ultraviolet.Color.OKLCH do
 
     - `:round`: an integer if rounding L, a*, and b* channel values to N decimal
       places is desired; if no rounding is desired, pass `false`. Default: `2`
+
   """
+  @spec from_rgb(Color.t()) :: {:ok, t()}
+  @spec from_rgb(Color.t(), [...]) :: {:ok, t()}
   def from_rgb(%Color{} = color, options \\ []) when is_list(options) do
     case OKLab.from_rgb(color, Keyword.merge(options, round: false)) do
-      {:ok, oklab} -> oklab_to_lch(oklab, options)
+      {:ok, oklab} -> oklab_to_oklch(oklab, options)
       error -> error
     end
   end
 
-  # degrees to radians
-  defp deg_to_rad(n), do: n * :math.pi() / 180.0
-  # radians to degrees
-  defp rad_to_deg(n), do: n * 180.0 / :math.pi()
-
-  defp lch_to_oklab(%OKLCH{l: l, c: c, h: h, a: a}) do
+  defp oklch_to_oklab(%OKLCH{l: l, c: c, h: h, a: a}) do
     h
     |> deg_to_rad()
     |> then(&OKLab.new(l, :math.cos(&1) * c, :math.sin(&1) * c, a))
   end
 
-  defp oklab_to_lch(%OKLab{a_: a, b_: b} = oklab, options) do
+  defp oklab_to_oklch(%OKLab{a_: a, b_: b} = oklab, options) do
     round = Keyword.get(options, :round, 2)
     c = :math.sqrt(a * a + b * b)
 
@@ -81,18 +125,10 @@ defmodule Ultraviolet.Color.OKLCH do
 
     [oklab.l_, c, h]
     |> Enum.map(&maybe_round(&1, round))
-    |> then(fn [l, c, h] -> OKLCH.new(l, c, h, oklab.a) end)
+    |> then(&new(&1 ++ [oklab.a]))
   end
 
   # simple floating-point modulus
   defp mod(n, x) when n >= 0 and n < x, do: n
   defp mod(n, x) when n >= 0, do: mod(n - x, n)
-
-  defp maybe_round(channel, 0), do: round(channel)
-
-  defp maybe_round(channel, digits) when is_integer(digits) and is_float(channel) do
-    Float.round(channel, digits)
-  end
-
-  defp maybe_round(channel, _), do: channel
 end

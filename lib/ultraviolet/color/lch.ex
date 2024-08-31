@@ -3,6 +3,7 @@ defmodule Ultraviolet.Color.LCH do
   Functions for working in the LCH / HCL colorspace.
   """
   defstruct l: 0, c: 0, h: 0, a: 1.0
+  @type t :: %{l: number(), c: number(), h: number(), a: number()}
 
   alias Ultraviolet.Color
   alias Ultraviolet.Color.Lab
@@ -10,19 +11,55 @@ defmodule Ultraviolet.Color.LCH do
 
   @me __MODULE__
 
-  defguardp is_hue(h) when is_number(h) and h >= 0 and h <= 360
-  defguardp is_normalized(n) when is_number(n) and n >= 0 and n <= 1
+  import Ultraviolet.Helpers,
+    only: [maybe_round: 2, is_angle: 1, is_unit_interval: 1]
 
   @doc """
-  Generates a new LCH color object
+  Generates a new LCH color
 
-    iex>Ultraviolet.Color.LCH.new(0.5, 0.0, 60)
-    {:ok, %Ultraviolet.Color.LCH{h: 60, c: 0.0, l: 0.5}}
+      iex>Ultraviolet.Color.LCH.new({0.5, 0.0, 60})
+      {:ok, %Ultraviolet.Color.LCH{h: 60, c: 0.0, l: 0.5}}
+
+  """
+  @spec new(tuple() | [number()] | map() | [...]) :: {:ok, t()}
+  def new({l, c, h}), do: new(l, c, h, 1.0)
+  def new({l, c, h, a}), do: new(l, c, h, a)
+  def new([l, c, h]) when is_number(l), do: new(l, c, h, 1.0)
+  def new([l, c, h, a]) when is_number(l), do: new(l, c, h, a)
+
+  # map of channel values
+  def new(channels) when is_map(channels) do
+    new([
+      Map.get(channels, :l),
+      Map.get(channels, :c),
+      Map.get(channels, :h),
+      Map.get(channels, :a, 1.0)
+    ])
+  end
+
+  # keyword list of channel values
+  def new([{k, _} | _rest] = channels) when is_list(channels) and is_atom(k) do
+    new(Enum.into(channels, %{}))
+  end
+
+  @doc """
+  Generates a new LCH color
+
+      iex>Ultraviolet.Color.LCH.new(0.5, 0.0, 60)
+      {:ok, %Ultraviolet.Color.LCH{h: 60, c: 0.0, l: 0.5}}
+
   """
   def new(l, c, h), do: new(l, c, h, 1.0)
 
+  @doc """
+  Generates a new LCH color
+
+      iex>Ultraviolet.Color.LCH.new(0.5, 0.0, 60, 0.5)
+      {:ok, %Ultraviolet.Color.LCH{h: 60, c: 0.0, l: 0.5, a: 0.5}}
+
+  """
   def new(l, c, h, a)
-      when is_hue(h) and is_number(l) and is_number(c) and is_normalized(a) do
+      when is_angle(h) and is_number(l) and is_number(c) and is_unit_interval(a) do
     {:ok, struct(@me, h: h, c: c, l: l, a: a)}
   end
 
@@ -31,10 +68,13 @@ defmodule Ultraviolet.Color.LCH do
 
   ## Options
 
-    - `:reference`: the CIE Lab white reference point. Default: `:d65`
-    - `:round`: an integer if rounding r, g, and b channel values to N decimal
-      places is desired; if no rounding is desired, pass `false`. Default: `0`
+  - `:reference`: the CIE Lab white reference point. Default: `:d65`
+  - `:round`: an integer if rounding r, g, and b channel values to N decimal
+    places is desired; if no rounding is desired, pass `false`. Default: `0`
+
   """
+  @spec to_rgb(t()) :: {:ok, Color.t()}
+  @spec to_rgb(t(), [...]) :: {:ok, Color.t()}
   def to_rgb(%LCH{} = lch, options \\ []) when is_list(options) do
     case lch_to_lab(lch) do
       {:ok, lab} -> Lab.to_rgb(lab, options)
@@ -47,10 +87,13 @@ defmodule Ultraviolet.Color.LCH do
 
   ## Options
 
-    - `:reference`: the CIE Lab white reference point. Default: `:d65`
-    - `:round`: an integer if rounding L, a*, and b* channel values to N decimal
-      places is desired; if no rounding is desired, pass `false`. Default: `2`
+  - `:reference`: the CIE Lab white reference point. Default: `:d65`
+  - `:round`: an integer if rounding L, a*, and b* channel values to N decimal
+    places is desired; if no rounding is desired, pass `false`. Default: `2`
+
   """
+  @spec from_rgb(Color.t()) :: {:ok, t()}
+  @spec from_rgb(Color.t(), [...]) :: {:ok, t()}
   def from_rgb(%Color{} = color, options \\ []) when is_list(options) do
     case Lab.from_rgb(color, Keyword.merge(options, round: false)) do
       {:ok, lab} -> lab_to_lch(lab, options)
@@ -87,12 +130,4 @@ defmodule Ultraviolet.Color.LCH do
   # simple floating-point modulus
   defp mod(n, x) when n >= 0 and n < x, do: n
   defp mod(n, x) when n >= 0, do: mod(n - x, n)
-
-  defp maybe_round(channel, 0), do: round(channel)
-
-  defp maybe_round(channel, digits) when is_integer(digits) and is_float(channel) do
-    Float.round(channel, digits)
-  end
-
-  defp maybe_round(channel, _), do: channel
 end

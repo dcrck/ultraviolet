@@ -10,6 +10,16 @@ defmodule Ultraviolet.Scale do
   alias Ultraviolet.Color
   alias __MODULE__
 
+  @type t :: %{
+          colors: [Color.t()],
+          space: Color.space(),
+          domain: [number()],
+          padding: tuple() | number(),
+          gamma: number(),
+          correct_lightness?: boolean(),
+          classes: non_neg_integer() | [number()],
+          positions: [number()]
+        }
   defstruct colors: [%Color{r: 255, g: 255, b: 255}, %Color{}],
             space: :rgb,
             domain: [0, 1],
@@ -274,7 +284,7 @@ defmodule Ultraviolet.Scale do
         sum + coef * :math.pow(1 - x, n - i) * :math.pow(x, i) * ch
       end)
     end)
-    |> then(fn [l, a, b] -> Color.new(l, a, b, space) end)
+    |> Color.new(space: space)
   end
 
   defp interpolate(scale, x) do

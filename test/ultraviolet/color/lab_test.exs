@@ -20,7 +20,7 @@ defmodule LabTest do
 
   for {name, {{r, g, b, a}, {l, a_star, b_star}}} <- cases do
     test "converts #{name} from L*a*b* to RGB properly" do
-      assert {:ok, color} = Color.new(unquote(r), unquote(g), unquote(b), unquote(a))
+      assert {:ok, color} = Color.new([unquote(r), unquote(g), unquote(b), unquote(a)])
       assert {:ok, lab} = Lab.from_rgb(color, round: false)
       assert Float.round(lab.l_, 2) == unquote(l)
       assert Float.round(lab.a_, 2) == unquote(a_star)
@@ -39,5 +39,39 @@ defmodule LabTest do
     # alternate color returns alternate results
     assert {:ok, %Color{r: 243, g: 255, b: 0, a: 1.0}} =
              Lab.to_rgb(yellow_lab, reference: :d50)
+  end
+
+  describe "new/1" do
+    setup do
+      {:ok, l_: 0, a_: 0, b_: 0, a: 0.5}
+    end
+
+    test "constructs from tuples properly", ctx do
+      assert {:ok, %Lab{}} = Lab.new({ctx.l_, ctx.a_, ctx.b_})
+      assert {:ok, %Lab{a: 0.5}} = Lab.new({ctx.l_, ctx.a_, ctx.b_, ctx.a})
+    end
+
+    test "constructs from lists properly", ctx do
+      assert {:ok, %Lab{}} = Lab.new([ctx.l_, ctx.a_, ctx.b_])
+      assert {:ok, %Lab{a: 0.5}} = Lab.new([ctx.l_, ctx.a_, ctx.b_, ctx.a])
+    end
+
+    test "constructs from keyword lists properly", ctx do
+      assert {:ok, %Lab{}} = Lab.new(Enum.into(Map.take(ctx, [:l_, :a_, :b_]), []))
+      assert {:ok, %Lab{a: 0.5}} = Lab.new(Enum.into(ctx, []))
+    end
+
+    test "constructs from maps properly", ctx do
+      assert {:ok, %Lab{}} = Lab.new(Enum.into(Map.take(ctx, [:l_, :a_, :b_]), %{}))
+      assert {:ok, %Lab{a: 0.5}} = Lab.new(Enum.into(ctx, %{}))
+    end
+  end
+
+  test "new/3 constructs a Lab color" do
+    assert {:ok, %Lab{}} = Lab.new(0, 0, 0)
+  end
+
+  test "new/4 constructs a Lab color" do
+    assert {:ok, %Lab{a: 0.5}} = Lab.new(0, 0, 0, 0.5)
   end
 end

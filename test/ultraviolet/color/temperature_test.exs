@@ -19,7 +19,7 @@ defmodule TemperatureTest do
 
   for {name, {{r, g, b, a}, kelvin}} <- cases do
     test "parses simple kelvin colors for #{name}" do
-      assert {:ok, color} = Color.new(unquote(r), unquote(g), unquote(b), unquote(a))
+      assert {:ok, color} = Color.new([unquote(r), unquote(g), unquote(b), unquote(a)])
       assert {:ok, ^color} = Temperature.to_rgb(unquote(kelvin))
     end
   end

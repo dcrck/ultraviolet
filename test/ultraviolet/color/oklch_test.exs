@@ -20,7 +20,7 @@ defmodule OKLCHTest do
 
   for {name, {{r, g, b, a}, {l, c, h}}} <- cases do
     test "converts #{name} from OKLCH to RGB properly" do
-      assert {:ok, color} = Color.new(unquote(r), unquote(g), unquote(b), unquote(a))
+      assert {:ok, color} = Color.new([unquote(r), unquote(g), unquote(b), unquote(a)])
       assert {:ok, oklch} = OKLCH.from_rgb(color, round: false)
       assert Float.round(oklch.l, 3) == unquote(l)
       assert Float.round(oklch.c, 3) == unquote(c)
@@ -33,5 +33,39 @@ defmodule OKLCHTest do
       assert oklch.a == unquote(a)
       assert {:ok, ^color} = OKLCH.to_rgb(oklch)
     end
+  end
+
+  describe "new/1" do
+    setup do
+      {:ok, l: 0, c: 0, h: 0, a: 0.5}
+    end
+
+    test "constructs from tuples properly", ctx do
+      assert {:ok, %OKLCH{}} = OKLCH.new({ctx.l, ctx.c, ctx.h})
+      assert {:ok, %OKLCH{a: 0.5}} = OKLCH.new({ctx.l, ctx.c, ctx.h, ctx.a})
+    end
+
+    test "constructs from lists properly", ctx do
+      assert {:ok, %OKLCH{}} = OKLCH.new([ctx.l, ctx.c, ctx.h])
+      assert {:ok, %OKLCH{a: 0.5}} = OKLCH.new([ctx.l, ctx.c, ctx.h, ctx.a])
+    end
+
+    test "constructs from keyword lists properly", ctx do
+      assert {:ok, %OKLCH{}} = OKLCH.new(Enum.into(Map.take(ctx, [:l, :c, :h]), []))
+      assert {:ok, %OKLCH{a: 0.5}} = OKLCH.new(Enum.into(ctx, []))
+    end
+
+    test "constructs from maps properly", ctx do
+      assert {:ok, %OKLCH{}} = OKLCH.new(Enum.into(Map.take(ctx, [:l, :c, :h]), %{}))
+      assert {:ok, %OKLCH{a: 0.5}} = OKLCH.new(Enum.into(ctx, %{}))
+    end
+  end
+
+  test "new/3 constructs an OKLCH color" do
+    assert {:ok, %OKLCH{}} = OKLCH.new(0, 0, 0)
+  end
+
+  test "new/4 constructs an OKLCH color" do
+    assert {:ok, %OKLCH{a: 0.5}} = OKLCH.new(0, 0, 0, 0.5)
   end
 end

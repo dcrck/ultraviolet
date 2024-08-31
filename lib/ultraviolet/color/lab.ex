@@ -23,11 +23,15 @@ defmodule Ultraviolet.Color.Lab do
 
   """
   defstruct l_: 0, a_: 0, b_: 0, a: 1.0
+  @type t :: %{l_: number(), a_: number(), b_: number(), a: number()}
 
   alias Decimal, as: D
   alias Ultraviolet.Color
   alias Ultraviolet.Color.XYZ
   alias __MODULE__
+
+  import Ultraviolet.Helpers,
+    only: [is_unit_interval: 1, maybe_round: 2, clamp_to_byte: 1]
 
   @me __MODULE__
 
@@ -38,14 +42,53 @@ defmodule Ultraviolet.Color.Lab do
     "kK" => D.div(D.new("24389"), D.new("27"))
   }
 
-  defguardp is_normalized(n) when is_number(n) and n >= 0 and n <= 1
+  @doc """
+  Generates a new CIE Lab color.
+
+      iex>Ultraviolet.Color.Lab.new({65.49, 64.24, -10.65})
+      {:ok, %Ultraviolet.Color.Lab{l_: 65.49, a_: 64.24, b_: -10.65}}
+
+  """
+  @spec new(tuple() | [number()] | map() | [...]) :: {:ok, t()}
+  def new({l, a, b}), do: new(l, a, b, 1.0)
+  def new({l, a, b, a_}), do: new(l, a, b, a_)
+  def new([l, a, b]) when is_number(l), do: new(l, a, b, 1.0)
+  def new([l, a, b, a_]) when is_number(l), do: new(l, a, b, a_)
+
+  # map of channel values
+  def new(channels) when is_map(channels) do
+    new([
+      Map.get(channels, :l_),
+      Map.get(channels, :a_),
+      Map.get(channels, :b_),
+      Map.get(channels, :a, 1.0)
+    ])
+  end
+
+  # keyword list of channel values
+  def new([{k, _} | _rest] = channels) when is_list(channels) and is_atom(k) do
+    new(Enum.into(channels, %{}))
+  end
 
   @doc """
-  Generates a new CIE Lab color
+  Generates a new CIE Lab color.
+
+      iex>Ultraviolet.Color.Lab.new(65.49, 64.24, -10.65)
+      {:ok, %Ultraviolet.Color.Lab{l_: 65.49, a_: 64.24, b_: -10.65}}
+
   """
+  @spec new(number(), number(), number()) :: {:ok, t()}
   def new(l, a, b), do: new(l, a, b, 1.0)
 
-  def new(l, a, b, a_) when is_normalized(a_) do
+  @doc """
+  Generates a new CIE Lab color.
+
+      iex>Ultraviolet.Color.Lab.new(65.49, 64.24, -10.65, 0.5)
+      {:ok, %Ultraviolet.Color.Lab{l_: 65.49, a_: 64.24, b_: -10.65, a: 0.5}}
+
+  """
+  @spec new(number(), number(), number(), number()) :: {:ok, t()}
+  def new(l, a, b, a_) when is_unit_interval(a_) do
     {:ok, struct(@me, l_: l, a_: a, b_: b, a: a_)}
   end
 
@@ -54,10 +97,12 @@ defmodule Ultraviolet.Color.Lab do
 
   ## Options
 
-    - `:reference`: the CIE Lab white reference point. Default: `:d65`
-    - `:round`: an integer if rounding r, g, and b channel values to N decimal
-      places is desired; if no rounding is desired, pass `false`. Default: `0`
+  - `:reference`: the CIE Lab white reference point. Default: `:d65`
+  - `:round`: an integer if rounding r, g, and b channel values to N decimal
+    places is desired; if no rounding is desired, pass `false`. Default: `0`
   """
+  @spec to_rgb(t()) :: {:ok, Color.t()}
+  @spec to_rgb(t(), [...]) :: {:ok, Color.t()}
   def to_rgb(%Lab{} = lab, options \\ []) when is_list(options) do
     reference = Keyword.get(options, :reference, :d65)
     round = Keyword.get(options, :round, 0)
@@ -70,7 +115,7 @@ defmodule Ultraviolet.Color.Lab do
         |> Enum.map(&(&1 * 255))
         |> Enum.map(&clamp_to_byte/1)
         |> Enum.map(&maybe_round(&1, round))
-        |> then(fn [r, g, b] -> Color.new(r, g, b, lab.a) end)
+        |> then(&Color.new(&1 ++ [lab.a]))
 
       error ->
         error
@@ -86,6 +131,8 @@ defmodule Ultraviolet.Color.Lab do
     - `:round`: an integer if rounding L, a*, and b* channel values to N decimal
       places is desired; if no rounding is desired, pass `false`. Default: `2`
   """
+  @spec from_rgb(Color.t()) :: {:ok, t()}
+  @spec from_rgb(Color.t(), [...]) :: {:ok, t()}
   def from_rgb(%Color{} = color, options \\ []) when is_list(options) do
     reference = Keyword.get(options, :reference, :d65)
     round = Keyword.get(options, :round, 2)
@@ -95,18 +142,8 @@ defmodule Ultraviolet.Color.Lab do
     xyz
     |> xyz_to_lab(Tuple.to_list(whitepoint))
     |> Enum.map(&maybe_round(&1, round))
-    |> then(fn [l, a, b] -> Lab.new(l, a, b, color.a) end)
+    |> then(&new(&1 ++ [color.a]))
   end
-
-  defp maybe_round(channel, 0), do: round(channel)
-
-  defp maybe_round(channel, digits) when is_integer(digits) and is_float(channel) do
-    Float.round(channel, digits)
-  end
-
-  defp maybe_round(channel, _), do: channel
-
-  defp clamp_to_byte(n), do: min(max(n, 0), 255)
 
   defp lab_to_xyz(%Lab{} = lab, [x, y, z]) do
     l = D.new(to_string(lab.l_))

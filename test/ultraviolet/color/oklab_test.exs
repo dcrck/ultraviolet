@@ -20,7 +20,7 @@ defmodule OKLabTest do
 
   for {name, {{r, g, b, a}, {l, a_star, b_star}}} <- cases do
     test "converts #{name} from OKLab to RGB properly" do
-      assert {:ok, color} = Color.new(unquote(r), unquote(g), unquote(b), unquote(a))
+      assert {:ok, color} = Color.new([unquote(r), unquote(g), unquote(b), unquote(a)])
       assert {:ok, lab} = OKLab.from_rgb(color, round: false)
       assert Float.round(lab.l_, 3) == unquote(l)
       assert Float.round(lab.a_, 3) == unquote(a_star)
@@ -28,5 +28,39 @@ defmodule OKLabTest do
       assert lab.a == unquote(a)
       assert {:ok, ^color} = OKLab.to_rgb(lab)
     end
+  end
+
+  describe "new/1" do
+    setup do
+      {:ok, l_: 0, a_: 0, b_: 0, a: 0.5}
+    end
+
+    test "constructs from tuples properly", ctx do
+      assert {:ok, %OKLab{}} = OKLab.new({ctx.l_, ctx.a_, ctx.b_})
+      assert {:ok, %OKLab{a: 0.5}} = OKLab.new({ctx.l_, ctx.a_, ctx.b_, ctx.a})
+    end
+
+    test "constructs from lists properly", ctx do
+      assert {:ok, %OKLab{}} = OKLab.new([ctx.l_, ctx.a_, ctx.b_])
+      assert {:ok, %OKLab{a: 0.5}} = OKLab.new([ctx.l_, ctx.a_, ctx.b_, ctx.a])
+    end
+
+    test "constructs from keyword lists properly", ctx do
+      assert {:ok, %OKLab{}} = OKLab.new(Enum.into(Map.take(ctx, [:l_, :a_, :b_]), []))
+      assert {:ok, %OKLab{a: 0.5}} = OKLab.new(Enum.into(ctx, []))
+    end
+
+    test "constructs from maps properly", ctx do
+      assert {:ok, %OKLab{}} = OKLab.new(Enum.into(Map.take(ctx, [:l_, :a_, :b_]), %{}))
+      assert {:ok, %OKLab{a: 0.5}} = OKLab.new(Enum.into(ctx, %{}))
+    end
+  end
+
+  test "new/3 constructs an OKLab color" do
+    assert {:ok, %OKLab{}} = OKLab.new(0, 0, 0)
+  end
+
+  test "new/4 constructs an OKLab color" do
+    assert {:ok, %OKLab{a: 0.5}} = OKLab.new(0, 0, 0, 0.5)
   end
 end

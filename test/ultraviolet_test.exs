@@ -18,26 +18,25 @@ defmodule UltravioletTest do
     end
 
     test "alpha values cannot be outside of [0, 1]" do
-      assert Ultraviolet.new(0, 0, 0, -1) ==
+      assert Ultraviolet.new({0, 0, 0, -1}) ==
                {:error, :invalid}
 
-      assert Ultraviolet.new(0, 0, 0, 1.1, :rgb) ==
+      assert Ultraviolet.new([0, 0, 0, 1.1]) ==
                {:error, :invalid}
 
-      assert Ultraviolet.new(0, 0, 0, 10, :hsl, []) ==
+      assert Ultraviolet.new([0, 0, 0, 10], space: :hsl) ==
                {:error, :invalid}
 
-      assert Ultraviolet.new(0, 0, 0, -0.1, :hsv, []) ==
+      assert Ultraviolet.new([0, 0, 0, -0.1], space: :hsv) ==
                {:error, :invalid}
     end
 
     test "unsupported color spaces returns an error" do
-      assert Ultraviolet.new(0, 0, 0, 1.0, :unknown, []) ==
-               {:error, :invalid}
+      assert Ultraviolet.new({0, 0, 0, 1.0}, space: :unknown) == :error
     end
 
     test "unsupported Lab reference whitepoints returns an error" do
-      assert Ultraviolet.new(0, 0, 0, 1.0, :lab, reference: :fake) ==
+      assert Ultraviolet.new([0, 0, 0, 1.0], space: :lab, reference: :fake) ==
                {:error, "undefined reference point"}
     end
   end
@@ -61,8 +60,7 @@ defmodule UltravioletTest do
     end
 
     test "Invalid color space will return an error" do
-      assert Ultraviolet.average(["red", "blue"], :fake) ==
-               {:error, :invalid}
+      assert Ultraviolet.average(["red", "blue"], :fake) == :error
     end
   end
 

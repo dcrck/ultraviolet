@@ -61,7 +61,10 @@ defmodule Ultraviolet.MixProject do
       homepage_url: "https://codeberg.org/meerific/uv",
       extras: [
         "README.md": [title: "README"],
-        "LICENSE.md": [title: "License"]
+        LICENSE: [title: "License"]
+      ],
+      nest_modules_by_prefix: [
+        Ultraviolet.Color
       ]
     ]
   end

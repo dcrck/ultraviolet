@@ -6,6 +6,7 @@ defmodule Ultraviolet.Color.OKLab do
   Uses the `:d65` reference illuminant.
   """
   defstruct l_: 0, a_: 0, b_: 0, a: 1.0
+  @type t :: %{l_: number(), a_: number(), b_: number(), a: number()}
 
   alias Decimal, as: D
 
@@ -13,6 +14,9 @@ defmodule Ultraviolet.Color.OKLab do
   alias Ultraviolet.Color
   alias Ultraviolet.Color.XYZ
   alias __MODULE__
+
+  import Ultraviolet.Helpers,
+    only: [is_unit_interval: 1, is_under_one: 1, maybe_round: 2, clamp_to_byte: 1]
 
   @xyz2lms M3x3.new([
              [
@@ -74,20 +78,54 @@ defmodule Ultraviolet.Color.OKLab do
                [D.new(1), D.new("-0.0894841775298119"), D.new("-1.2914855480194092")]
              ])
 
-  defguardp is_normalized(n) when is_number(n) and n >= 0 and n <= 1
-  defguardp is_ok(n) when is_number(n) and n >= -1.00001 and n <= 1.00001
+  @doc """
+  Generates a new OKLab color
+
+      iex>Ultraviolet.Color.OKLab.new({0.5, 0.0, 0.0})
+      {:ok, %Ultraviolet.Color.OKLab{l_: 0.5, a_: 0.0, b_: 0.0}}
+
+  """
+  @spec new(tuple() | [number()] | map() | [...]) :: {:ok, t()}
+  def new({l, a, b}), do: new(l, a, b, 1.0)
+  def new({l, a, b, a_}), do: new(l, a, b, a_)
+  def new([l, a, b]) when is_number(l), do: new(l, a, b, 1.0)
+  def new([l, a, b, a_]) when is_number(l), do: new(l, a, b, a_)
+
+  # map of channel values
+  def new(channels) when is_map(channels) do
+    new([
+      Map.get(channels, :l_),
+      Map.get(channels, :a_),
+      Map.get(channels, :b_),
+      Map.get(channels, :a, 1.0)
+    ])
+  end
+
+  # keyword list of channel values
+  def new([{k, _} | _rest] = channels) when is_list(channels) and is_atom(k) do
+    new(Enum.into(channels, %{}))
+  end
 
   @doc """
   Generates a new OKLab color
 
-    iex>Ultraviolet.Color.OKLab.new(0.5, 0.0, 0.0)
-    {:ok, %Ultraviolet.Color.OKLab{l_: 0.5, a_: 0.0, b_: 0.0}}
+      iex>Ultraviolet.Color.OKLab.new(0.5, 0.0, 0.0)
+      {:ok, %Ultraviolet.Color.OKLab{l_: 0.5, a_: 0.0, b_: 0.0}}
 
   """
+  @spec new(number(), number(), number()) :: {:ok, t()}
   def new(l, a, b), do: new(l, a, b, 1.0)
 
+  @doc """
+  Generates a new OKLab color
+
+      iex>Ultraviolet.Color.OKLab.new(0.5, 0.0, 0.0, 0.5)
+      {:ok, %Ultraviolet.Color.OKLab{l_: 0.5, a_: 0.0, b_: 0.0, a: 0.5}}
+
+  """
+  @spec new(number(), number(), number(), number()) :: {:ok, t()}
   def new(l, a, b, a_)
-      when is_normalized(a_) and is_ok(l) and is_ok(a) and is_ok(b) do
+      when is_unit_interval(a_) and is_under_one(l) and is_under_one(a) and is_under_one(b) do
     {:ok, struct(OKLab, l_: l, a_: a, b_: b, a: a_)}
   end
 
@@ -99,32 +137,25 @@ defmodule Ultraviolet.Color.OKLab do
     - `:round`: an integer if rounding r, g, and b channel values to N decimal
       places is desired; if no rounding is desired, pass `false`. Default: `0`
   """
+  @spec to_rgb(t()) :: {:ok, Color.t()}
+  @spec to_rgb(t(), [...]) :: {:ok, Color.t()}
   def to_rgb(%OKLab{} = oklab, options \\ []) when is_list(options) do
     round = Keyword.get(options, :round, 0)
 
     [oklab.l_, oklab.a_, oklab.b_]
-    # convert to decimal
     |> Enum.map(&D.new(to_string(&1)))
-    # OKLab to LMS
     |> M3x3.mult(M3x3.t(@oklab2lms))
-    # cube
     |> Enum.map(&D.mult(D.mult(&1, &1), &1))
-    # LMS to XYZ
     |> M3x3.mult(M3x3.t(@lms2xyz))
-    # create XYZ struct
     |> XYZ.new()
-    # XYZ to RGB
     |> case do
       {:ok, xyz} ->
         xyz
         |> XYZ.to_rgb()
-        # un-normalize
         |> Enum.map(&(&1 * 255))
-        # clamp to the color space
         |> Enum.map(&clamp_to_byte/1)
-        # maybe round each value
         |> Enum.map(&maybe_round(&1, round))
-        |> then(fn [r, g, b] -> Color.new(r, g, b, oklab.a) end)
+        |> then(&Color.new(&1 ++ [oklab.a]))
 
       other ->
         other
@@ -139,29 +170,17 @@ defmodule Ultraviolet.Color.OKLab do
     - `:round`: an integer if rounding L, a*, and b* channel values to N decimal
       places is desired; if no rounding is desired, pass `false`. Default: `2`
   """
+  @spec from_rgb(Color.t()) :: {:ok, t()}
+  @spec from_rgb(Color.t(), [...]) :: {:ok, t()}
   def from_rgb(%Color{} = color, options \\ []) when is_list(options) do
     round = Keyword.get(options, :round, 2)
     {:ok, xyz} = XYZ.from_rgb(color)
 
     [xyz.x, xyz.y, xyz.z]
-    # XYZ to LMS
     |> M3x3.mult(M3x3.t(@xyz2lms))
-    # cube root
     |> Enum.map(fn d -> D.from_float(Float.pow(D.to_float(d), 1 / 3)) end)
-    # LMS to OKLab
     |> M3x3.mult(M3x3.t(@lms2oklab))
-    # create OKLab struct
     |> Enum.map(&maybe_round(D.to_float(&1), round))
-    |> then(fn [l, a, b] -> new(l, a, b, color.a) end)
+    |> then(&new(&1 ++ [color.a]))
   end
-
-  defp clamp_to_byte(n), do: min(max(n, 0), 255)
-
-  defp maybe_round(channel, 0), do: round(channel)
-
-  defp maybe_round(channel, digits) when is_integer(digits) and is_float(channel) do
-    Float.round(channel, digits)
-  end
-
-  defp maybe_round(channel, _), do: channel
 end

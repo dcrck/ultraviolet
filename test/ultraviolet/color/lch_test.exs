@@ -20,7 +20,7 @@ defmodule LCHTest do
 
   for {name, {{r, g, b, a}, {l, c, h}}} <- cases do
     test "converts #{name} from LCH to RGB properly" do
-      assert {:ok, color} = Color.new(unquote(r), unquote(g), unquote(b), unquote(a))
+      assert {:ok, color} = Color.new([unquote(r), unquote(g), unquote(b), unquote(a)])
       assert {:ok, lab} = LCH.from_rgb(color, round: false)
       assert Float.round(lab.l, 2) == unquote(l)
       assert Float.round(lab.c, 2) == unquote(c)
@@ -33,5 +33,39 @@ defmodule LCHTest do
       assert lab.a == unquote(a)
       assert {:ok, ^color} = LCH.to_rgb(lab)
     end
+  end
+
+  describe "new/1" do
+    setup do
+      {:ok, l: 0, c: 0, h: 0, a: 0.5}
+    end
+
+    test "constructs from tuples properly", ctx do
+      assert {:ok, %LCH{}} = LCH.new({ctx.l, ctx.c, ctx.h})
+      assert {:ok, %LCH{a: 0.5}} = LCH.new({ctx.l, ctx.c, ctx.h, ctx.a})
+    end
+
+    test "constructs from lists properly", ctx do
+      assert {:ok, %LCH{}} = LCH.new([ctx.l, ctx.c, ctx.h])
+      assert {:ok, %LCH{a: 0.5}} = LCH.new([ctx.l, ctx.c, ctx.h, ctx.a])
+    end
+
+    test "constructs from keyword lists properly", ctx do
+      assert {:ok, %LCH{}} = LCH.new(Enum.into(Map.take(ctx, [:l, :c, :h]), []))
+      assert {:ok, %LCH{a: 0.5}} = LCH.new(Enum.into(ctx, []))
+    end
+
+    test "constructs from maps properly", ctx do
+      assert {:ok, %LCH{}} = LCH.new(Enum.into(Map.take(ctx, [:l, :c, :h]), %{}))
+      assert {:ok, %LCH{a: 0.5}} = LCH.new(Enum.into(ctx, %{}))
+    end
+  end
+
+  test "new/3 constructs an LCH color" do
+    assert {:ok, %LCH{}} = LCH.new(0, 0, 0)
+  end
+
+  test "new/4 constructs an LCH color" do
+    assert {:ok, %LCH{a: 0.5}} = LCH.new(0, 0, 0, 0.5)
   end
 end

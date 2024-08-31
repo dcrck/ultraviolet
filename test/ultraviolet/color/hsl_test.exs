@@ -21,7 +21,7 @@ defmodule HSLTest do
 
   for {name, {{r, g, b, a}, {h, s, l}}} <- cases do
     test "converts #{name} from HSL to RGB properly" do
-      assert {:ok, color} = Color.new(unquote(r), unquote(g), unquote(b), unquote(a))
+      assert {:ok, color} = Color.new([unquote(r), unquote(g), unquote(b), unquote(a)])
       assert {:ok, hsl} = HSL.from_rgb(color)
       assert hsl.h == unquote(h)
       assert hsl.s == unquote(s)
@@ -29,5 +29,39 @@ defmodule HSLTest do
       assert hsl.a == unquote(a)
       assert {:ok, ^color} = HSL.to_rgb(hsl)
     end
+  end
+
+  describe "new/1" do
+    setup do
+      {:ok, h: 0, s: 0, l: 0, a: 0.5}
+    end
+
+    test "constructs from tuples properly", ctx do
+      assert {:ok, %HSL{}} = HSL.new({ctx.h, ctx.s, ctx.l})
+      assert {:ok, %HSL{a: 0.5}} = HSL.new({ctx.h, ctx.s, ctx.l, ctx.a})
+    end
+
+    test "constructs from lists properly", ctx do
+      assert {:ok, %HSL{}} = HSL.new([ctx.h, ctx.s, ctx.l])
+      assert {:ok, %HSL{a: 0.5}} = HSL.new([ctx.h, ctx.s, ctx.l, ctx.a])
+    end
+
+    test "constructs from keyword lists properly", ctx do
+      assert {:ok, %HSL{}} = HSL.new(Enum.into(Map.take(ctx, [:h, :s, :l]), []))
+      assert {:ok, %HSL{a: 0.5}} = HSL.new(Enum.into(ctx, []))
+    end
+
+    test "constructs from maps properly", ctx do
+      assert {:ok, %HSL{}} = HSL.new(Enum.into(Map.take(ctx, [:h, :s, :l]), %{}))
+      assert {:ok, %HSL{a: 0.5}} = HSL.new(Enum.into(ctx, %{}))
+    end
+  end
+
+  test "new/3 constructs an HSL color" do
+    assert {:ok, %HSL{}} = HSL.new(0, 0, 0)
+  end
+
+  test "new/4 constructs an HSL color" do
+    assert {:ok, %HSL{a: 0.5}} = HSL.new(0, 0, 0, 0.5)
   end
 end

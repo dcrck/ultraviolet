@@ -1,6 +1,26 @@
 defmodule Ultraviolet.Helpers do
   @moduledoc false
 
+  # use decimal points because floating point math is weird
+  defguard is_byte(b) when is_number(b) and b >= 0 and b <= 255.00001
+  defguard is_unit_interval(n) when is_number(n) and n >= 0 and n <= 1.00001
+  defguard is_angle(a) when is_number(a) and a >= 0 and a <= 360.00001
+  defguard is_under_one(n) when is_number(n) and n >= -1.00001 and n <= 1.00001
+
+  def maybe_round(channel, 0), do: round(channel)
+
+  def maybe_round(channel, digits)
+      when is_integer(digits) and is_float(channel) do
+    Float.round(channel, digits)
+  end
+
+  def maybe_round(channel, _), do: channel
+
+  def clamp_to_byte(n), do: min(max(n, 0), 255)
+
+  def deg_to_rad(n), do: n * :math.pi() / 180.0
+  def rad_to_deg(n), do: n * 180.0 / :math.pi()
+
   @doc """
   validates that every element in a list returns {:ok, result} from
   the given condition function.
@@ -18,6 +38,7 @@ defmodule Ultraviolet.Helpers do
     end
   end
 
+  # coveralls-ignore-start
   pattern = "\\s*(\\d+)\\s*"
   @regex Regex.compile!("^#{pattern},#{pattern},#{pattern}\\)")
 
@@ -39,4 +60,5 @@ defmodule Ultraviolet.Helpers do
   end
 
   def parse_css_color(_), do: {:error, :no_match}
+  # coveralls-ignore-stop
 end

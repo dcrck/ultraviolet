@@ -8,23 +8,35 @@ defmodule Ultraviolet.Color.Temperature do
 
   alias Ultraviolet.Color
   alias Decimal, as: D
+  import Ultraviolet.Helpers, only: [clamp_to_byte: 1, maybe_round: 2]
 
   @doc """
   Converts a temperature to an approximate color.
 
   The effective temperature range goes from 0 to about 30,000K.
   """
-  def to_rgb(kelvin)
-      when is_number(kelvin) and kelvin >= 0 and kelvin <= 30_000 do
-    [r, g, b] = temp_to_rgb(kelvin)
-    Color.new(r, g, b)
+  @spec to_rgb(number()) :: {:ok, Color.t()} | {:error, term()}
+  @spec to_rgb(number(), [...]) :: {:ok, Color.t()} | {:error, term()}
+  def to_rgb(kelvin, options \\ [])
+      when is_number(kelvin) and kelvin >= 0 and kelvin <= 30_000 and is_list(options) do
+    round = Keyword.get(options, :round, 0)
+
+    kelvin
+    |> temp_to_rgb()
+    |> Enum.map(&maybe_round(&1, round))
+    |> Color.new()
   end
 
   @doc """
   Converts a color into an approximate temperature.
   """
-  def from_rgb(%Color{r: r, b: b}) do
-    round(find_temp(b / r, 1000, 40_000, 0.4, 0))
+  @spec from_rgb(Color.t()) :: number()
+  @spec from_rgb(Color.t(), [...]) :: number()
+  def from_rgb(%Color{r: r, b: b}, options \\ []) when is_list(options) do
+    maybe_round(
+      find_temp(b / r, 1000, 40_000, 0.4, 0),
+      Keyword.get(options, :round, 0)
+    )
   end
 
   defp find_temp(_ratio, min, max, eps, temp) when max - min <= eps, do: temp
@@ -39,7 +51,12 @@ defmodule Ultraviolet.Color.Temperature do
     end
   end
 
-  defp temp_to_rgb(k), do: (k / 100) |> then(&[red(&1), green(&1), blue(&1)])
+  defp temp_to_rgb(k) do
+    (k / 100)
+    |> List.duplicate(3)
+    |> Enum.zip([&red/1, &green/1, &blue/1])
+    |> Enum.map(fn {temp, func} -> func.(temp) end)
+  end
 
   defp red(temperature) when temperature < 66, do: 255
 
@@ -92,6 +109,4 @@ defmodule Ultraviolet.Color.Temperature do
   end
 
   defp blue(_temperature), do: 255
-
-  defp clamp_to_byte(n), do: min(max(n, 0), 255)
 end
