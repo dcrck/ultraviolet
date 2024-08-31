@@ -11,6 +11,28 @@ defmodule Ultraviolet do
 
   ## Getting Started
 
+  Here are a few things `Ultraviolet` can do:
+
+  - read colors from a wide range of inputs
+  - analyze and manipulate colors
+  - convert colors into a wide range of formats
+  - linear, bezier, and custom interpolation in different color spaces
+
+  Here's an example of a simple read / manipulate / output chain:
+
+      iex>{:ok, color} = Ultraviolet.new("pink");
+      iex>color |> Ultraviolet.Color.darken!() |> Ultraviolet.Color.saturate!(2) |> Ultraviolet.Color.hex()
+      "#ff6d93"
+
+  Aside from that, `Ultraviolet` can help you **generate nice colors** using
+  various methods. These colors can be used, for example, as a color palette for
+  maps or data visualization.
+
+      iex>{:ok, scale} = Ultraviolet.scale(["#fafa6e", "#2a4858"], space: :lch);
+      iex>Enum.map(Ultraviolet.Scale.take(scale, 6), &Ultraviolet.Color.hex/1)
+      ["#fafa6e", "#bed869", "#6aba78", "#00969d", "#1b6c85", "#2a4858"]
+
+  The rest of this module's documentation has more examples.
   """
   alias Ultraviolet.{Color, Scale, ColorBrewer}
   import Ultraviolet.Helpers
