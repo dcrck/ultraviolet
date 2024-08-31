@@ -2,6 +2,7 @@
 
 [![hex.pm badge](https://img.shields.io/badge/Package%20on%20hex.pm-informational)](https://hex.pm/packages/ultraviolet)
 [![Documentation badge](https://img.shields.io/badge/Documentation-ff69b4)][docs]
+[![Coverage Status](https://coveralls.io/repos/github/dcrck/ultraviolet/badge.svg?branch=main)](https://coveralls.io/github/dcrck/ultraviolet?branch=main)
 
 [Online Documentation][docs].
 
