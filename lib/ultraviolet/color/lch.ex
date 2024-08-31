@@ -3,6 +3,10 @@ defmodule Ultraviolet.Color.LCH do
   Functions for working in the LCH / HCL colorspace.
   """
   defstruct l: 0, c: 0, h: 0, a: 1.0
+
+  @typedoc """
+  Defines the channels in a LCH color.
+  """
   @type t :: %{l: number(), c: number(), h: number(), a: number()}
 
   alias Ultraviolet.Color
@@ -68,7 +72,7 @@ defmodule Ultraviolet.Color.LCH do
 
   ## Options
 
-  - `:reference`: the CIE Lab white reference point. Default: `:d65`
+  - `:reference`: the CIE Lab [white reference point](`t:Ultraviolet.Color.Lab.white_point/0`). Default: `:d65`
   - `:round`: an integer if rounding r, g, and b channel values to N decimal
     places is desired; if no rounding is desired, pass `false`. Default: `0`
 

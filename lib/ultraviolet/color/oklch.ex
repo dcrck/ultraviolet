@@ -7,6 +7,10 @@ defmodule Ultraviolet.Color.OKLCH do
   Uses the `:d65` reference illuminant.
   """
   defstruct l: 0, c: 0, h: 0, a: 1.0
+
+  @typedoc """
+  Defines the channels in an OKLCH color.
+  """
   @type t :: %{l: number(), c: number(), h: number(), a: number()}
 
   alias Ultraviolet.Color

@@ -3,6 +3,10 @@ defmodule Ultraviolet.Color.HSL do
   Functions for working in the HSL color space.
   """
   defstruct h: 0, s: 0.0, l: 0.0, a: 1.0
+
+  @typedoc """
+  Defines the channels in an HSL color.
+  """
   @type t :: %{h: number(), s: number(), l: number(), a: number()}
 
   alias Ultraviolet.Color

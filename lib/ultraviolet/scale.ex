@@ -92,10 +92,21 @@ defmodule Ultraviolet.Scale do
   defp ok_if_no_error(options), do: {:ok, options}
 
   @doc """
-  Retrieves a single color from the `scale` at the given `value `in the domain.
-  """
-  def fetch(scale, value, bypass? \\ false)
+  Retrieves a single color from the `scale` at the given `value` in the domain.
 
+  ## Example
+
+      iex>{:ok, scale} = Ultraviolet.scale();
+      iex>{:ok, color} = Ultraviolet.Scale.fetch(scale, 0.25);
+      iex>Ultraviolet.Color.hex(color)
+      "#bfbfbf"
+
+  """
+  @spec fetch(t(), number()) :: {:ok, Color.t()} | {:error, term()}
+  def fetch(scale, value), do: fetch(scale, value, false)
+
+  @doc false
+  @spec fetch(t(), number(), boolean()) :: {:ok, Color.t()} | {:error, term()}
   def fetch(%Scale{} = scale, value, bypass?) when is_number(value) do
     with {:ok, x} <- domain(scale, value, bypass?) do
       interpolate(scale, x)
@@ -325,6 +336,13 @@ defmodule Ultraviolet.Scale do
   If the given value is invalid, returns the `default` color. If the given value
   is outside of the domain, returns the closest domain bound, i.e. the highest
   or lowest value in the domain.
+
+  ## Example 
+
+      iex>{:ok, scale} = Ultraviolet.scale();
+      iex>Ultraviolet.Color.hex(Ultraviolet.Scale.get(scale, 0.25))
+      "#bfbfbf"
+
   """
   def get(scale, x, default \\ %Color{}) do
     case fetch(scale, x) do
@@ -337,6 +355,16 @@ defmodule Ultraviolet.Scale do
   Returns a list of colors that correspond to each value in `xs`. in `xs`. If
   `xs` contains values that are not within the `scale`'s domain, they are
   clipped to the domain bounds.
+
+  ## Example
+
+      iex>{:ok, scale} = Ultraviolet.scale(["yellow", "008ae5"]);
+      iex>Ultraviolet.Scale.take_keys(scale, [0, 1])
+      [
+        %Ultraviolet.Color{r: 255, g: 255, b: 0},
+        %Ultraviolet.Color{r: 0, g: 138, b: 229},
+      ]
+
   """
   def take_keys(scale, xs) when is_list(xs) do
     xs
@@ -350,6 +378,13 @@ defmodule Ultraviolet.Scale do
 
   @doc """
   Returns a list of `n` equi-distant colors from the `scale`.
+
+  ## Example
+
+      iex>{:ok, scale} = Ultraviolet.scale("OrRd");
+      iex>Enum.map(Ultraviolet.Scale.take(scale, 5), &Ultraviolet.Color.hex/1)
+      ["#fff7ec", "#fdd49e", "#fc8d59", "#d7301f", "#7f0000"]
+
   """
   def take(%Scale{} = scale, n) when is_integer(n) do
     {min, max} = domain_bounds(scale)

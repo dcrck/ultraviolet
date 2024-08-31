@@ -13,12 +13,15 @@ defmodule Ultraviolet.Color do
 
   - sRGB (the default): `:rgb`
   - HSL: `:hsl`
+  - HSV / HSV: `:hsv`
   - CIE Lab: `:lab`
   - LCH: `:lch`, `:hcl`
   - OKLab: `:oklab`
   - OKLCH: `:oklch`
 
-  ### To add
+  ### Other Scales
+
+  I may add these based on need in the future:
 
   - GL (RGBA normalized to `0..1`)
   - CMYK
@@ -42,7 +45,7 @@ defmodule Ultraviolet.Color do
     oklch: OKLCH
   }
   @typedoc """
-  A structure defining the channels in an sRGB Color.
+  Defines the channels in an sRGB color.
 
   This is the core Ultraviolet structure. See `Ultraviolet` for examples
   of how it can be used.
@@ -178,7 +181,7 @@ defmodule Ultraviolet.Color do
   def new(_), do: {:error, :invalid}
 
   @doc """
-  Creates a new `Color` from the given `input` and `options`.
+  Creates a new `Color` from the given `channels` and `options`.
 
   See `Ultraviolet.new/2` for more details.
   """
@@ -592,6 +595,9 @@ defmodule Ultraviolet.Color do
   defp maybe_correct_hue(h) when h > 360, do: maybe_correct_hue(h - 360)
   defp maybe_correct_hue(h), do: h
 
+  @typedoc """
+  Blend Modes for use with `blend/2` or `blend/3`
+  """
   @type blend_mode ::
           :normal | :multiply | :darken | :lighten | :screen | :overlay | :burn | :dodge
 

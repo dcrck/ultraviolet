@@ -4,6 +4,8 @@ defmodule Ultraviolet.Color.Temperature do
 
   Based on Neil Bartlett's
   [implementation](https://github.com/neilbartlett/color-temperature)
+
+  See `Ultraviolet.temperature/1` for examples.
   """
 
   alias Ultraviolet.Color

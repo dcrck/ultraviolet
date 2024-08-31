@@ -6,7 +6,7 @@ defmodule Ultraviolet do
 
   The first step to get your color into Ultraviolet is to create a
   `Ultraviolet.Color`. This can be done through `new/1`, `new/2`, or the
-  constructors for each supported color space: `hsl/2` for HSL, `hsb/2` for HSB,
+  constructors for each supported color space: `hsl/2` for HSL, `hsv/2` for HSV,
   etc.
 
   ## Getting Started
@@ -93,28 +93,28 @@ defmodule Ultraviolet do
 
   ## Examples
 
-  #### HSL
+  ### HSL
 
       iex>Ultraviolet.new({330, 1, 0.6}, space: :hsl)
       {:ok, %Ultraviolet.Color{r: 255, g: 51, b: 153, a: 1.0}}
       iex>Ultraviolet.new([330, 1, 0.6, 0.5], space: :hsl)
       {:ok, %Ultraviolet.Color{r: 255, g: 51, b: 153, a: 0.5}}
 
-  #### HSV
+  ### HSV / HSB
 
       iex>Ultraviolet.new({330, 0.8, 1}, space: :hsv)
       {:ok, %Ultraviolet.Color{r: 255, g: 51, b: 153, a: 1.0}}
       iex>Ultraviolet.new([330, 0.8, 1, 0.5], space: :hsv)
       {:ok, %Ultraviolet.Color{r: 255, g: 51, b: 153, a: 0.5}}
 
-  #### Lab
+  ### Lab
 
       iex>Ultraviolet.new({40, -20, 50}, space: :lab)
       {:ok, %Ultraviolet.Color{r: 83, g: 102, b: 0, a: 1.0}}
       iex>Ultraviolet.new([40, -20, 50, 0.5], space: :lab)
       {:ok, %Ultraviolet.Color{r: 83, g: 102, b: 0, a: 0.5}}
 
-  #### LCH / HCL
+  ### LCH / HCL
 
       iex>Ultraviolet.new({80, 40, 130}, space: :lch)
       {:ok, %Ultraviolet.Color{r: 170, g: 210, b: 140, a: 1.0}}
@@ -125,14 +125,14 @@ defmodule Ultraviolet do
       iex>Ultraviolet.new([h: 130, c: 40, l: 80, a: 0.5], space: :hcl)
       {:ok, %Ultraviolet.Color{r: 170, g: 210, b: 140, a: 0.5}}
 
-  #### OKLab
+  ### OKLab
 
       iex>Ultraviolet.new([0.4, -0.2, 0.5], space: :oklab)
       {:ok, %Ultraviolet.Color{r: 98, g: 68, b: 0, a: 1.0}}
       iex>Ultraviolet.new({0.4, -0.2, 0.5, 0.5}, space: :oklab)
       {:ok, %Ultraviolet.Color{r: 98, g: 68, b: 0, a: 0.5}}
 
-  #### OKLCH
+  ### OKLCH
 
       iex>Ultraviolet.new([0.5, 0.2, 240], space: :oklch)
       {:ok, %Ultraviolet.Color{r: 0, g: 105, b: 199, a: 1.0}}
@@ -143,7 +143,7 @@ defmodule Ultraviolet do
   def new(input, options), do: Color.new(input, options)
 
   @doc """
-  Generates the sRGB representation of a `Color.HSL`.
+  Generates the sRGB representation of a `Ultraviolet.Color.HSL`.
 
   ## Examples
 
@@ -160,7 +160,7 @@ defmodule Ultraviolet do
   end
 
   @doc """
-  Generates the sRGB representation of a `Color.HSV`.
+  Generates the sRGB representation of a `Ultraviolet.Color.HSV`.
 
   ## Examples
 
@@ -177,11 +177,11 @@ defmodule Ultraviolet do
   end
 
   @doc """
-  Generates the sRGB representation of a `Color.Lab`
+  Generates the sRGB representation of a `Ultraviolet.Color.Lab`
 
   ## Colorspace Options
 
-  - `:reference`: the CIE Lab white reference point. Default: `:d65`
+  - `:reference`: the CIE Lab [white reference point](`t:Ultraviolet.Color.Lab.white_point/0`). Default: `:d65`
 
   ## Examples
 
@@ -200,11 +200,11 @@ defmodule Ultraviolet do
   end
 
   @doc """
-  Genereates the sRGB representation of a `Color.LCH`.
+  Generates the sRGB representation of a `Ultraviolet.Color.LCH`.
 
   ## Colorspace Options
 
-  - `:reference`: the CIE Lab white reference point. Default: `:d65`
+  - `:reference`: the CIE Lab [white reference point](`t:Ultraviolet.Color.Lab.white_point/0`). Default: `:d65`
 
   ## Example
 
@@ -219,7 +219,7 @@ defmodule Ultraviolet do
   end
 
   @doc """
-  Genereates the sRGB representation of a `Color.LCH`.
+  Generates the sRGB representation of a `Ultraviolet.Color.LCH`.
 
   This is the same as `lch/2`, but with the channel order of the first
   argument reversed.
@@ -237,7 +237,7 @@ defmodule Ultraviolet do
   end
 
   @doc """
-  Genereates the sRGB representation of a `Color.OKLab`.
+  Generates the sRGB representation of an `Ultraviolet.Color.OKLab`.
 
   ## Example
 
@@ -254,7 +254,7 @@ defmodule Ultraviolet do
   end
 
   @doc """
-  Genereates the sRGB representation of a `Color.OKLCH`.
+  Generates the sRGB representation of a `Ultraviolet.Color.OKLCH`.
 
   ## Example
 
@@ -421,7 +421,8 @@ defmodule Ultraviolet do
       "#ffffff"
 
   """
-  @spec blend(Color.input(), Color.input(), Color.space()) :: {:ok, Color.t()} | {:error, term()}
+  @spec blend(Color.input(), Color.input(), Color.blend_mode()) ::
+          {:ok, Color.t()} | {:error, term()}
   def blend(color, mask, mode) do
     case validate_all([color, mask], &Color.new/1) do
       {:ok, [color, mask]} -> Color.blend(color, mask, mode)
@@ -430,7 +431,25 @@ defmodule Ultraviolet do
   end
 
   @doc """
-  Color scales, created with `Ultraviolet.scale/2`, map numbers onto a color
+  Create a new color `Scale` from `"white"` to `"black"` with default options.
+
+  See `scale/2` for examples.
+  """
+  @spec scale() :: {:ok, Scale.t()} | {:error, term()}
+  def scale(), do: scale(["white", "black"], [])
+
+  @doc """
+  Create a new color `Scale` with the given `colors` and default options.
+
+  See `scale/2` for examples.
+  """
+  @spec scale([Color.input()] | String.t()) :: {:ok, Scale.t()} | {:error, term()}
+  def scale(colors), do: scale(colors, [])
+
+  @doc """
+  Creates a new color `Scale` with the given `colors` and `options`.
+
+  Color scales, created with `scale/2`, map numbers onto a color
   palette. Because they're basically lazy maps, they have similar access
   functions as maps, as well as some Enumerable:
 
@@ -464,6 +483,37 @@ defmodule Ultraviolet do
         %Ultraviolet.Color{r: 255, g: 255, b: 0},
         %Ultraviolet.Color{r: 255, g: 0, b: 0},
         %Ultraviolet.Color{r: 0, g: 0, b: 0},
+      ]
+
+  ## Color Brewer
+
+  Ultraviolet includes the definitions from
+  [ColorBrewer](https://colorbrewer2.org) as well.
+
+      iex>{:ok, scale} = Ultraviolet.scale("OrRd");
+      iex>Enum.map(Ultraviolet.Scale.take(scale, 5), &Ultraviolet.Color.hex/1)
+      ["#fff7ec", "#fdd49e", "#fc8d59", "#d7301f", "#7f0000"]
+
+  You can reverse the colors by reversing the domain:
+
+      iex>{:ok, scale} = Ultraviolet.scale("YlGnBu", domain: [1, 0]);
+      iex>Ultraviolet.Scale.fetch(scale, 0.25)
+      {:ok, %Ultraviolet.Color{r: 34, g: 94, b: 168}}
+
+  ### Color Count
+
+  You can include a `:count` option when creating a ColorBrewer-based scale
+  to retrieve the Color Brewer palette with the given number of colors.
+  The default is `9`.
+
+      iex>{:ok, scale} = Ultraviolet.scale("YlGnBu", count: 5);
+      iex> scale.colors
+      [
+        %Ultraviolet.Color{r: 255, g: 255, b: 204, a: 1.0},
+        %Ultraviolet.Color{r: 161, g: 218, b: 180, a: 1.0},
+        %Ultraviolet.Color{r: 65, g: 182, b: 196, a: 1.0},
+        %Ultraviolet.Color{r: 44, g: 127, b: 184, a: 1.0},
+        %Ultraviolet.Color{r: 37, g: 52, b: 148, a: 1.0}
       ]
 
   ## Options
@@ -654,45 +704,9 @@ defmodule Ultraviolet do
       iex>Enum.map(Ultraviolet.Scale.take(cubehelix, 5), &Ultraviolet.Color.hex/1)
       ["#000000", "#16534c", "#a07949", "#c7b3ed", "#ffffff"]
 
-  ## Color Brewer
-
-  Ultraviolet includes the definitions from
-  [ColorBrewer](https://colorbrewer2.org) as well.
-
-      iex>{:ok, scale} = Ultraviolet.scale("OrRd");
-      iex>Enum.map(Ultraviolet.Scale.take(scale, 5), &Ultraviolet.Color.hex/1)
-      ["#fff7ec", "#fdd49e", "#fc8d59", "#d7301f", "#7f0000"]
-
-  You can reverse the colors by reversing the domain:
-
-      iex>{:ok, scale} = Ultraviolet.scale("YlGnBu", domain: [1, 0]);
-      iex>Ultraviolet.Scale.fetch(scale, 0.25)
-      {:ok, %Ultraviolet.Color{r: 34, g: 94, b: 168}}
-
-  ### Color Count
-
-  You can include a `:count` option when creating a ColorBrewer-based scale
-  to retrieve the Color Brewer palette with the given number of colors.
-  The default is `9`.
-
-      iex>{:ok, scale} = Ultraviolet.scale("YlGnBu", count: 5);
-      iex> scale.colors
-      [
-        %Ultraviolet.Color{r: 255, g: 255, b: 204, a: 1.0},
-        %Ultraviolet.Color{r: 161, g: 218, b: 180, a: 1.0},
-        %Ultraviolet.Color{r: 65, g: 182, b: 196, a: 1.0},
-        %Ultraviolet.Color{r: 44, g: 127, b: 184, a: 1.0},
-        %Ultraviolet.Color{r: 37, g: 52, b: 148, a: 1.0}
-      ]
-
   """
-  @spec scale() :: {:ok, Scale.t()} | {:error, term()}
-  def scale(), do: scale(["white", "black"], [])
-
-  @spec scale([Color.input()] | String.t()) :: {:ok, Scale.t()} | {:error, term()}
-  def scale(colors), do: scale(colors, [])
-
-  @spec scale([Color.input()] | String.t(), [...]) :: {:ok, Scale.t()} | {:error, term()}
+  @spec scale(colors_or_palette :: [Color.input()] | String.t(), [...]) ::
+          {:ok, Scale.t()} | {:error, term()}
   def scale(colors, options) when is_list(options) and is_list(colors) do
     case validate_all(colors, &Color.new/1) do
       {:ok, colors} -> Scale.new(colors, options)

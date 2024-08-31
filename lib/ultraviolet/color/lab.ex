@@ -23,7 +23,12 @@ defmodule Ultraviolet.Color.Lab do
 
   """
   defstruct l_: 0, a_: 0, b_: 0, a: 1.0
+
+  @typedoc """
+  Defines the channels in a Lab color.
+  """
   @type t :: %{l_: number(), a_: number(), b_: number(), a: number()}
+  @type white_point :: :d50 | :d55 | :d65 | :a | :b | :c | :f2 | :f7 | :f11 | :e | :icc
 
   alias Decimal, as: D
   alias Ultraviolet.Color
@@ -97,7 +102,7 @@ defmodule Ultraviolet.Color.Lab do
 
   ## Options
 
-  - `:reference`: the CIE Lab white reference point. Default: `:d65`
+  - `:reference`: the CIE Lab [white reference point](`t:white_point/0`). Default: `:d65`
   - `:round`: an integer if rounding r, g, and b channel values to N decimal
     places is desired; if no rounding is desired, pass `false`. Default: `0`
   """

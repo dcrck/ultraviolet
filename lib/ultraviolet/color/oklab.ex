@@ -6,6 +6,10 @@ defmodule Ultraviolet.Color.OKLab do
   Uses the `:d65` reference illuminant.
   """
   defstruct l_: 0, a_: 0, b_: 0, a: 1.0
+
+  @typedoc """
+  Defines the channels in an OKLab color.
+  """
   @type t :: %{l_: number(), a_: number(), b_: number(), a: number()}
 
   alias Decimal, as: D
