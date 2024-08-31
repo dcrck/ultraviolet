@@ -1,6 +1,6 @@
 # Ultraviolet
 
-[![hex.pm badge](https://img.shields.io/badge/Package%20on%20hex.om-informational)](https://hex.pm/packages/ultraviolet)
+[![hex.pm badge](https://img.shields.io/badge/Package%20on%20hex.pm-informational)](https://hex.pm/packages/ultraviolet)
 [![Documentation badge](https://img.shields.io/badge/Documentation-ff69b4)][docs]
 
 [Online Documentation][docs].
