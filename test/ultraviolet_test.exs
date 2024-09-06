@@ -48,8 +48,15 @@ defmodule UltravioletTest do
     end
 
     test "weight/ratio should be between 0 and 1" do
-      assert Ultraviolet.mix("red", "blue", 1.1) ==
+      assert Ultraviolet.mix("red", "blue", ratio: 1.1) ==
                {:error, "expected a ratio between 0 and 1, got: 1.1"}
+    end
+
+    test "longer? works regardless of color order" do
+      {:ok, color1} = Ultraviolet.mix("lime", "red", ratio: 0.5, space: :hsv, longer?: true)
+      {:ok, color2} = Ultraviolet.mix("red", "lime", ratio: 0.5, space: :hsv, longer?: true)
+      assert color1 == color2
+      assert Ultraviolet.Color.hex(color1) == "#0000ff"
     end
   end
 
@@ -60,7 +67,7 @@ defmodule UltravioletTest do
     end
 
     test "Invalid color space will return an error" do
-      assert Ultraviolet.average(["red", "blue"], :fake) == :error
+      assert Ultraviolet.average(["red", "blue"], space: :fake) == :error
     end
   end
 

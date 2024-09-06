@@ -314,26 +314,26 @@ defmodule Ultraviolet do
       iex>{:ok, mixed} = Ultraviolet.mix("red", "blue");
       iex>Ultraviolet.Color.hex(mixed)
       "#b400b4"
-      iex>{:ok, mixed} = Ultraviolet.mix("red", "blue", 0.25);
+      iex>{:ok, mixed} = Ultraviolet.mix("red", "blue", ratio: 0.25);
       iex>Ultraviolet.Color.hex(mixed)
       "#dd0080"
-      iex>{:ok, mixed} = Ultraviolet.mix("red", "blue", 0.75);
+      iex>{:ok, mixed} = Ultraviolet.mix("red", "blue", ratio: 0.75);
       iex>Ultraviolet.Color.hex(mixed)
       "#8000dd"
 
   The color mixing produces different results based on the color space used for
   interpolation (default: `:lrgb`).
 
-      iex>{:ok, mixed} = Ultraviolet.mix("red", "blue", 0.5, :rgb);
+      iex>{:ok, mixed} = Ultraviolet.mix("red", "blue", ratio: 0.5, space: :rgb);
       iex>Ultraviolet.Color.hex(mixed)
       "#800080"
-      iex>{:ok, mixed} = Ultraviolet.mix("red", "blue", 0.5, :hsl);
+      iex>{:ok, mixed} = Ultraviolet.mix("red", "blue", ratio: 0.5, space: :hsl);
       iex>Ultraviolet.Color.hex(mixed)
       "#ff00ff"
-      iex>{:ok, mixed} = Ultraviolet.mix("red", "blue", 0.5, :lab);
+      iex>{:ok, mixed} = Ultraviolet.mix("red", "blue", ratio: 0.5, space: :lab);
       iex>Ultraviolet.Color.hex(mixed)
       "#ca0089"
-      iex>{:ok, mixed} = Ultraviolet.mix("red", "blue", 0.5, :lch);
+      iex>{:ok, mixed} = Ultraviolet.mix("red", "blue", ratio: 0.5, space: :lch);
       iex>Ultraviolet.Color.hex(mixed)
       "#fa0080"
 
@@ -347,20 +347,35 @@ defmodule Ultraviolet do
   - `:hcl`
   - `:lab` and `:oklab`
 
+  ### Long Hue Interpolation
+
+  Hue-based color spaces will take the "short" route between hues by default.
+  If you want your mixture to take the long route instead, set the `longer?`
+  option to `true`.
+
+      iex>{:ok, mixed} = Ultraviolet.mix("red", "blue", ratio: 0.5, space: :hsv, longer?: true);
+      iex>Ultraviolet.Color.hex(mixed)
+      "#00ff00"
+
+  Keep in mind this option only applies to color spaces with a Hue channel.
+  If you want to use another color space, `longer?` will have no effect:
+
+      iex>{:ok, mixed} = Ultraviolet.mix("red", "blue", ratio: 0.5, space: :lab, longer?: true);
+      iex>Ultraviolet.Color.hex(mixed)
+      "#ca0089"
+
   """
   @spec mix(Color.input(), Color.input()) :: {:ok, Color.t()} | {:error, term()}
-  @spec mix(Color.input(), Color.input(), float()) :: {:ok, Color.t()} | {:error, term()}
-  @spec mix(Color.input(), Color.input(), float(), Color.space()) ::
-          {:ok, Color.t()} | {:error, term()}
-  def mix(color, target, ratio \\ 0.5, space \\ :lrgb) do
+  @spec mix(Color.input(), Color.input(), [...]) :: {:ok, Color.t()} | {:error, term()}
+  def mix(color, target, options \\ []) when is_list(options) do
     case validate_all([color, target], &Color.new/1) do
-      {:ok, [color, target]} -> Color.mix(color, target, ratio, space)
+      {:ok, [color, target]} -> Color.mix(color, target, options)
       error -> error
     end
   end
 
   @doc """
-  Similar to `mix/4`, but accepts more than two colors. Simple averaging
+  Similar to `mix/3`, but accepts more than two colors. Simple averaging
   of the R,G,B components and the alpha channel.
 
   ## Examples
@@ -369,13 +384,13 @@ defmodule Ultraviolet do
       iex>{:ok, color} = Ultraviolet.average(colors);
       iex>Ultraviolet.Color.hex(color)
       "#d3b480"
-      iex>{:ok, color} = Ultraviolet.average(colors, :rgb);
+      iex>{:ok, color} = Ultraviolet.average(colors, space: :rgb);
       iex>Ultraviolet.Color.hex(color)
       "#b79757"
-      iex>{:ok, color} = Ultraviolet.average(colors, :lab);
+      iex>{:ok, color} = Ultraviolet.average(colors, space: :lab);
       iex>Ultraviolet.Color.hex(color)
       "#d3a96a"
-      iex>{:ok, color} = Ultraviolet.average(colors, :lch);
+      iex>{:ok, color} = Ultraviolet.average(colors, space: :lch);
       iex>Ultraviolet.Color.hex(color)
       "#ef9e4e"
 
@@ -388,20 +403,22 @@ defmodule Ultraviolet do
   You can also provide an array of weights to compute a weighted average:
 
       iex> colors = ["ddd", "yellow", "red", "teal"];
-      iex>{:ok, color} = Ultraviolet.average(colors, :lch, [1, 1, 2, 1]);
+      iex>{:ok, color} = Ultraviolet.average(colors, space: :lch, weights: [1, 1, 2, 1]);
       iex>Ultraviolet.Color.hex(color)
       "#f98841"
-      iex>{:ok, color} = Ultraviolet.average(colors, :lch, [1.5, 0.5, 1, 2.3]);
+      iex>{:ok, color} = Ultraviolet.average(colors, space: :lch, weights: [1.5, 0.5, 1, 2.3]);
       iex>Ultraviolet.Color.hex(color)
       "#ae9e52"
   """
   @spec average([Color.input()]) :: {:ok, Color.t()} | {:error, term()}
-  @spec average([Color.input()], float()) :: {:ok, Color.t()} | {:error, term()}
-  @spec average([Color.input()], float(), Color.space()) :: {:ok, Color.t()} | {:error, term()}
-  def average(colors, mode \\ :lrgb, weights \\ nil) do
+  @spec average([Color.input()], [...]) :: {:ok, Color.t()} | {:error, term()}
+  def average(colors, options \\ []) when is_list(options) do
     case validate_all(colors, &Color.new/1) do
-      {:ok, [color | targets]} -> Color.average(color, targets, mode, weights)
-      error -> error
+      {:ok, [color | targets]} ->
+        Color.average(color, targets, options)
+
+      error ->
+        error
     end
   end
 
@@ -562,7 +579,7 @@ defmodule Ultraviolet do
 
   ### Color Space
 
-  As with `mix/2`, the result of color interpolation will depend on the color
+  As with `mix/3`, the result of color interpolation will depend on the color
   space in which the channels are interpolated. The default `:space` is `:rgb`.
 
   This default is okay, but sometimes, two-color RGB gradients go through a gray
@@ -580,7 +597,7 @@ defmodule Ultraviolet do
       # this is better
       "#8e6271"
 
-  The available values for this option are the same as with `Ultaviolet.mix/2`.
+  The available values for this option are the same as with `mix/3`.
 
   ### Gamma Correction
 
@@ -725,6 +742,16 @@ defmodule Ultraviolet do
       ...>);
       iex>Enum.map(Ultraviolet.Scale.take(cubehelix, 5), &Ultraviolet.Color.hex/1)
       ["#000000", "#16534c", "#a07949", "#c7b3ed", "#ffffff"]
+
+  ### Linear Interpolation: Hue Interpolation Direction
+
+  As with `mix/3`, use the `:longer?` option when creating a `Scale` to
+  interpolate along the "longer" route between hues. See `mix/3` for more
+  details about how this works.
+
+      iex>{:ok, scale} = Ultraviolet.scale(["red", "lime"], space: :hsl, longer?: true);
+      iex>Ultraviolet.Color.hex(Ultraviolet.Scale.get(scale, 0.5))
+      "#0000ff"
 
   """
   @spec scale(colors_or_palette :: [Color.input()] | String.t(), [...]) ::

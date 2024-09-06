@@ -449,19 +449,18 @@ defmodule Ultraviolet.Color do
   ## Examples
 
       iex>{:ok, color} = Color.new("hotpink");
-      iex> Color.hex(Color.shade!(color, 0.25))
+      iex> Color.hex(Color.shade!(color, ratio: 0.25))
       "#dd5b9c"
-      iex> Color.hex(Color.shade!(color, 0.5))
+      iex> Color.hex(Color.shade!(color, ratio: 0.5))
       "#b44a7f"
-      iex> Color.hex(Color.shade!(color, 0.75))
+      iex> Color.hex(Color.shade!(color, ratio: 0.75))
       "#80355a"
   """
   @spec shade!(t()) :: t()
-  @spec shade!(t(), number()) :: t()
-  @spec shade!(t(), number(), space()) :: t()
-  def shade!(color, ratio \\ 0.5, space \\ :lrgb) do
+  @spec shade!(t(), [...]) :: t()
+  def shade!(color, options \\ []) when is_list(options) do
     color
-    |> mix(%Color{r: 0, g: 0, b: 0}, ratio, space)
+    |> mix(%Color{r: 0, g: 0, b: 0}, options)
     |> ok!()
   end
 
@@ -472,19 +471,18 @@ defmodule Ultraviolet.Color do
   ## Examples
 
       iex>{:ok, color} = Color.new("hotpink");
-      iex> Color.hex(Color.tint!(color, 0.25))
+      iex> Color.hex(Color.tint!(color, ratio: 0.25))
       "#ff9dc9"
-      iex> Color.hex(Color.tint!(color, 0.5))
+      iex> Color.hex(Color.tint!(color, ratio: 0.5))
       "#ffc3dd"
-      iex> Color.hex(Color.tint!(color, 0.75))
+      iex> Color.hex(Color.tint!(color, ratio: 0.75))
       "#ffe3ee"
   """
   @spec tint!(t()) :: t()
-  @spec tint!(t(), number()) :: t()
-  @spec tint!(t(), number(), space()) :: t()
-  def tint!(color, ratio \\ 0.5, space \\ :lrgb) do
+  @spec tint!(t(), [...]) :: t()
+  def tint!(color, options \\ []) when is_list(options) do
     color
-    |> mix(%Color{r: 255, g: 255, b: 255}, ratio, space)
+    |> mix(%Color{r: 255, g: 255, b: 255}, options)
     |> ok!()
   end
 
@@ -494,17 +492,15 @@ defmodule Ultraviolet.Color do
   See `Ultraviolet.mix/4` for documentation and examples.
   """
   @spec mix(t(), t()) :: {:ok, t()} | {:error, term()}
-  @spec mix(t(), t(), number()) :: {:ok, t()} | {:error, term()}
-  @spec mix(t(), t(), number(), space()) :: {:ok, t()} | {:error, term()}
-  # coveralls-ignore-next-line
-  def mix(color, target, weight \\ 0.5, space \\ :lrgb)
+  @spec mix(t(), t(), [...]) :: {:ok, t()} | {:error, term()}
+  def mix(color, target, options \\ []) when is_list(options) do
+    case Keyword.pop(options, :ratio, 0.5) do
+      {w, _options} when not is_unit_interval(w) ->
+        {:error, "expected a ratio between 0 and 1, got: #{w}"}
 
-  def mix(_color, _target, w, _space) when not is_unit_interval(w) do
-    {:error, "expected a ratio between 0 and 1, got: #{w}"}
-  end
-
-  def mix(color, target, w, space) do
-    average(color, [target], space, [1 - w, w])
+      {w, options} ->
+        average(color, [target], Keyword.put(options, :weights, [1 - w, w]))
+    end
   end
 
   @doc """
@@ -514,27 +510,41 @@ defmodule Ultraviolet.Color do
   See `Ultraviolet.average/3` for documentation and examples.
   """
   @spec average(t(), [t()]) :: {:ok, t()} | {:error, term()}
-  @spec average(t(), [t()], space()) :: {:ok, t()} | {:error, term()}
-  @spec average(t(), [t()], space(), [number()] | nil) :: {:ok, t()} | {:error, term()}
-  # coveralls-ignore-next-line
-  def average(color, targets, space \\ :lrgb, weights \\ nil)
+  @spec average(t(), [t()], [...]) :: {:ok, t()} | {:error, term()}
+  def average(color, targets, options \\ []) when is_list(options) do
+    options
+    |> Enum.into(%{space: :lrgb, weights: nil, longer?: false})
+    |> case do
+      %{weights: nil} = params ->
+        Map.put(params, :weights, norm_even(length(targets) + 1))
 
-  def average(color, targets, space, nil) do
-    average(color, targets, space, Enum.map([color | targets], fn _ -> 1 end))
+      %{weights: weights} = params ->
+        Map.put(params, :weights, normalize(weights))
+    end
+    |> then(&do_average(color, targets, &1))
   end
 
-  def average(color, targets, space, weights) do
+  defp norm_even(n), do: List.duplicate(1 / n, n)
+
+  defp normalize(values) do
+    values
+    |> Enum.sum()
+    |> then(fn sum -> Enum.map(values, &(&1 / sum)) end)
+  end
+
+  defp do_average(color, targets, %{space: space} = params) do
     case validate_all([color | targets], &into(&1, space)) do
       {:ok, color_list} ->
         color_list
         |> Enum.map(&Map.from_struct/1)
+        |> maybe_adjust(params)
         |> Enum.zip_with(& &1)
-        |> Enum.map(&weighted_average(&1, normalize(weights), space))
+        |> Enum.map(&weighted_average(&1, params))
         |> List.flatten()
         |> Enum.reduce(%{}, fn {k, v}, m ->
           Map.update(m, k, v, &tuple_sum(&1, v))
         end)
-        |> Enum.map(&consolidate(&1, space))
+        |> Enum.map(&consolidate(&1, params))
         |> Enum.into(%{})
         |> new(space: space)
 
@@ -543,34 +553,48 @@ defmodule Ultraviolet.Color do
     end
   end
 
-  defp normalize(values) do
-    values
-    |> Enum.sum()
-    |> then(&Enum.map(values, fn v -> v / &1 end))
+  defp maybe_adjust(colors, %{longer?: false}), do: colors
+
+  defp maybe_adjust(colors, %{space: space})
+       when space not in [:hsl, :hcl, :lch, :hsv, :oklch] do
+    colors
   end
 
-  defp weighted_average(components, weights, space) do
+  defp maybe_adjust([%{h: h1} = c1, %{h: h2} = c2], _)
+       when h2 - h1 < 180 and h2 - h1 > 0 do
+    [%{c1 | h: h1 + 360}, c2]
+  end
+
+  defp maybe_adjust([%{h: h1} = c1, %{h: h2} = c2], _)
+       when h2 - h1 > -180 and h2 - h1 <= 0 do
+    [c1, %{c2 | h: h2 + 360}]
+  end
+
+  defp maybe_adjust(colors, _), do: colors
+
+  defp weighted_average(components, %{weights: weights} = params) do
     components
     |> Enum.zip(weights)
-    |> Enum.map(&channel_with_weight(&1, space))
+    |> Enum.map(&channel_with_weight(&1, params))
   end
 
   # alpha channel is always a simple weighted average
-  defp channel_with_weight({{:a, value}, weight}, _space) do
+  defp channel_with_weight({{:a, value}, weight}, _params) do
     {:a, weight * value}
   end
 
-  defp channel_with_weight({{channel, value}, weight}, :lrgb) do
+  defp channel_with_weight({{channel, value}, weight}, %{space: :lrgb}) do
     {channel, weight * value * value}
   end
 
   # since hues are angles, we need to use a different weighted average
-  defp channel_with_weight({{:h, degrees}, weight}, _space) do
+  # for the default "shorter" path
+  defp channel_with_weight({{:h, degrees}, weight}, %{longer?: false}) do
     radians = degrees * :math.pi() / 180
     {:h, {:math.cos(radians) * weight, :math.sin(radians) * weight}}
   end
 
-  defp channel_with_weight({{channel, value}, weight}, _space) do
+  defp channel_with_weight({{channel, value}, weight}, _params) do
     {channel, weight * value}
   end
 
@@ -581,15 +605,16 @@ defmodule Ultraviolet.Color do
 
   # the final step...
   # alpha channel is always a simple weighted average
-  defp consolidate({:a, v}, _space), do: {:a, v}
-  defp consolidate({k, v}, :lrgb), do: {k, clamp_to_byte(:math.sqrt(v))}
-  defp consolidate({k, v}, :rgb), do: {k, clamp_to_byte(v)}
+  defp consolidate({:a, v}, _params), do: {:a, v}
+  defp consolidate({k, v}, %{space: :lrgb}), do: {k, clamp_to_byte(:math.sqrt(v))}
+  defp consolidate({k, v}, %{space: :rgb}), do: {k, clamp_to_byte(v)}
 
-  defp consolidate({:h, {cos, sin}}, _space) do
+  defp consolidate({:h, {cos, sin}}, %{longer?: false}) do
     {:h, maybe_correct_hue(:math.atan2(sin, cos) * 180 / :math.pi())}
   end
 
-  defp consolidate({k, v}, _space), do: {k, v}
+  defp consolidate({:h, v}, %{longer?: true}), do: {:h, maybe_correct_hue(v)}
+  defp consolidate({k, v}, _params), do: {k, v}
 
   defp maybe_correct_hue(h) when h < 0, do: maybe_correct_hue(h + 360)
   defp maybe_correct_hue(h) when h > 360, do: maybe_correct_hue(h - 360)

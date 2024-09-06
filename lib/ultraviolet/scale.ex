@@ -17,6 +17,7 @@ defmodule Ultraviolet.Scale do
           padding: tuple() | number(),
           gamma: number(),
           correct_lightness?: boolean(),
+          longer?: boolean(),
           classes: non_neg_integer() | [number()],
           positions: [number()]
         }
@@ -26,6 +27,7 @@ defmodule Ultraviolet.Scale do
             padding: {0, 0},
             gamma: 1,
             correct_lightness?: false,
+            longer?: false,
             classes: 0,
             interpolation: :linear,
             positions: []
@@ -49,7 +51,16 @@ defmodule Ultraviolet.Scale do
   defp validate_and_add_options(options, _colors) when is_list(options) do
     options
     |> Enum.into(%{})
-    |> Map.take([:space, :domain, :padding, :gamma, :correct_lightness?, :classes, :interpolation])
+    |> Map.take([
+      :space,
+      :domain,
+      :padding,
+      :gamma,
+      :correct_lightness?,
+      :longer?,
+      :classes,
+      :interpolation
+    ])
     |> validate_interpolation()
     |> ok_if_no_error()
   end
@@ -310,7 +321,11 @@ defmodule Ultraviolet.Scale do
         {:halt, {:ok, color}}
 
       [{pos, color}, {next, target}], {:ok, x} when x > pos and x < next ->
-        {:halt, Color.mix(color, target, (x - pos) / (next - pos), scale.space)}
+        scale
+        |> Map.take([:space, :longer?])
+        |> Map.put(:ratio, (x - pos) / (next - pos))
+        |> Enum.into([])
+        |> then(&{:halt, Color.mix(color, target, &1)})
 
       _, x ->
         {:cont, x}
