@@ -176,7 +176,7 @@ defmodule Ultraviolet do
 
   """
   @spec hsl(Color.channels()) :: {:ok, Color.t()} | {:error, term()}
-  @spec hsl(Color.channels(), [...]) :: {:ok, Color.t()} | {:error, term()}
+  @spec hsl(Color.channels(), list()) :: {:ok, Color.t()} | {:error, term()}
   def hsl(channels, options \\ []) when is_list(options) do
     new(channels, Keyword.merge(options, space: :hsl))
   end
@@ -193,7 +193,7 @@ defmodule Ultraviolet do
 
   """
   @spec hsv(Color.channels()) :: {:ok, Color.t()} | {:error, term()}
-  @spec hsv(Color.channels(), [...]) :: {:ok, Color.t()} | {:error, term()}
+  @spec hsv(Color.channels(), list()) :: {:ok, Color.t()} | {:error, term()}
   def hsv(channels, options \\ []) when is_list(options) do
     new(channels, Keyword.merge(options, space: :hsl))
   end
@@ -216,7 +216,7 @@ defmodule Ultraviolet do
 
   """
   @spec lab(Color.channels()) :: {:ok, Color.t()} | {:error, term()}
-  @spec lab(Color.channels(), [...]) :: {:ok, Color.t()} | {:error, term()}
+  @spec lab(Color.channels(), list()) :: {:ok, Color.t()} | {:error, term()}
   def lab(channels, options \\ []) when is_list(options) do
     new(channels, Keyword.merge(options, space: :lab))
   end
@@ -235,7 +235,7 @@ defmodule Ultraviolet do
 
   """
   @spec lch(Color.channels()) :: {:ok, Color.t()} | {:error, term()}
-  @spec lch(Color.channels(), [...]) :: {:ok, Color.t()} | {:error, term()}
+  @spec lch(Color.channels(), list()) :: {:ok, Color.t()} | {:error, term()}
   def lch(channels, options \\ []) when is_list(options) do
     new(channels, Keyword.merge(options, space: :lch))
   end
@@ -253,7 +253,7 @@ defmodule Ultraviolet do
 
   """
   @spec hcl(Color.channels()) :: {:ok, Color.t()} | {:error, term()}
-  @spec hcl(Color.channels(), [...]) :: {:ok, Color.t()} | {:error, term()}
+  @spec hcl(Color.channels(), list()) :: {:ok, Color.t()} | {:error, term()}
   def hcl(channels, options \\ []) when is_list(options) do
     new(channels, Keyword.merge(options, space: :hcl))
   end
@@ -270,7 +270,7 @@ defmodule Ultraviolet do
 
   """
   @spec oklab(Color.channels()) :: {:ok, Color.t()} | {:error, term()}
-  @spec oklab(Color.channels(), [...]) :: {:ok, Color.t()} | {:error, term()}
+  @spec oklab(Color.channels(), list()) :: {:ok, Color.t()} | {:error, term()}
   def oklab(channels, options \\ []) when is_list(options) do
     new(channels, Keyword.merge(options, space: :oklab))
   end
@@ -285,7 +285,7 @@ defmodule Ultraviolet do
 
   """
   @spec oklch(Color.channels()) :: {:ok, Color.t()} | {:error, term()}
-  @spec oklch(Color.channels(), [...]) :: {:ok, Color.t()} | {:error, term()}
+  @spec oklch(Color.channels(), list()) :: {:ok, Color.t()} | {:error, term()}
   def oklch(channels, options \\ []) when is_list(options) do
     new(channels, Keyword.merge(options, space: :oklch))
   end
@@ -366,7 +366,7 @@ defmodule Ultraviolet do
 
   """
   @spec mix(Color.input(), Color.input()) :: {:ok, Color.t()} | {:error, term()}
-  @spec mix(Color.input(), Color.input(), [...]) :: {:ok, Color.t()} | {:error, term()}
+  @spec mix(Color.input(), Color.input(), list()) :: {:ok, Color.t()} | {:error, term()}
   def mix(color, target, options \\ []) when is_list(options) do
     case validate_all([color, target], &Color.new/1) do
       {:ok, [color, target]} -> Color.mix(color, target, options)
@@ -411,7 +411,7 @@ defmodule Ultraviolet do
       "#ae9e52"
   """
   @spec average([Color.input()]) :: {:ok, Color.t()} | {:error, term()}
-  @spec average([Color.input()], [...]) :: {:ok, Color.t()} | {:error, term()}
+  @spec average([Color.input()], list()) :: {:ok, Color.t()} | {:error, term()}
   def average(colors, options \\ []) when is_list(options) do
     case validate_all(colors, &Color.new/1) do
       {:ok, [color | targets]} ->
@@ -754,7 +754,7 @@ defmodule Ultraviolet do
       "#0000ff"
 
   """
-  @spec scale(colors_or_palette :: [Color.input()] | String.t(), [...]) ::
+  @spec scale(colors_or_palette :: [Color.input()] | String.t(), list()) ::
           {:ok, Scale.t()} | {:error, term()}
   def scale(colors, options) when is_list(options) and is_list(colors) do
     case validate_all(colors, &Color.new/1) do

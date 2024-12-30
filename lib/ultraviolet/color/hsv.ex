@@ -7,7 +7,7 @@ defmodule Ultraviolet.Color.HSV do
   @typedoc """
   Defines the channels in an HSV / HSB color.
   """
-  @type t :: %{h: number(), s: number(), v: number(), a: number()}
+  @type t :: %__MODULE__{h: number(), s: number(), v: number(), a: number()}
 
   alias Ultraviolet.Color
   alias Ultraviolet.Color.HSL
@@ -81,7 +81,7 @@ defmodule Ultraviolet.Color.HSV do
   @spec to_rgb(t()) :: {:ok, Color.t()}
   def to_rgb(%HSV{} = hsv), do: to_rgb(hsv, [])
 
-  @spec to_rgb(t(), [...]) :: {:ok, Color.t()}
+  @spec to_rgb(t(), list()) :: {:ok, Color.t()}
   def to_rgb(%HSV{s: s, v: v, h: h, a: a} = hsv, options)
       when is_list(options) and ((s == 0 and v == 1) or v == 0) do
     l = lightness_from_hsv(hsv)
@@ -108,7 +108,7 @@ defmodule Ultraviolet.Color.HSV do
 
   """
   @spec from_rgb(Color.t()) :: {:ok, t()}
-  @spec from_rgb(Color.t(), [...]) :: {:ok, t()}
+  @spec from_rgb(Color.t(), list()) :: {:ok, t()}
   def from_rgb(%Color{} = color, options \\ []) when is_list(options) do
     {:ok, hsl} = HSL.from_rgb(color, options)
     hsl_to_hsv(hsl, hsl.l + hsl.s * min(hsl.l, 1 - hsl.l))

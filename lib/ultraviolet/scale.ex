@@ -10,7 +10,7 @@ defmodule Ultraviolet.Scale do
   alias Ultraviolet.Color
   alias __MODULE__
 
-  @type t :: %{
+  @type t :: %__MODULE__{
           colors: [Color.t()],
           space: Color.space(),
           domain: [number()],

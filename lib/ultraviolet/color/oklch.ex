@@ -11,7 +11,7 @@ defmodule Ultraviolet.Color.OKLCH do
   @typedoc """
   Defines the channels in an OKLCH color.
   """
-  @type t :: %{l: number(), c: number(), h: number(), a: number()}
+  @type t :: %__MODULE__{l: number(), c: number(), h: number(), a: number()}
 
   alias Ultraviolet.Color
   alias Ultraviolet.Color.OKLab
@@ -87,10 +87,8 @@ defmodule Ultraviolet.Color.OKLCH do
 
   """
   def to_rgb(%OKLCH{} = lch, options \\ []) when is_list(options) do
-    case oklch_to_oklab(lch) do
-      {:ok, oklab} -> OKLab.to_rgb(oklab, options)
-      error -> error
-    end
+    {:ok, oklab} = oklch_to_oklab(lch)
+    OKLab.to_rgb(oklab, options)
   end
 
   @doc """
@@ -103,12 +101,10 @@ defmodule Ultraviolet.Color.OKLCH do
 
   """
   @spec from_rgb(Color.t()) :: {:ok, t()}
-  @spec from_rgb(Color.t(), [...]) :: {:ok, t()}
+  @spec from_rgb(Color.t(), list()) :: {:ok, t()}
   def from_rgb(%Color{} = color, options \\ []) when is_list(options) do
-    case OKLab.from_rgb(color, Keyword.merge(options, round: false)) do
-      {:ok, oklab} -> oklab_to_oklch(oklab, options)
-      error -> error
-    end
+    {:ok, oklab} = OKLab.from_rgb(color, Keyword.merge(options, round: false))
+    oklab_to_oklch(oklab, options)
   end
 
   defp oklch_to_oklab(%OKLCH{l: l, c: c, h: h, a: a}) do

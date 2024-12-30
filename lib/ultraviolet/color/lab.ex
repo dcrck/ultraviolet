@@ -27,7 +27,7 @@ defmodule Ultraviolet.Color.Lab do
   @typedoc """
   Defines the channels in a Lab color.
   """
-  @type t :: %{l_: number(), a_: number(), b_: number(), a: number()}
+  @type t :: %__MODULE__{l_: number(), a_: number(), b_: number(), a: number()}
   @type white_point :: :d50 | :d55 | :d65 | :a | :b | :c | :f2 | :f7 | :f11 | :e | :icc
 
   alias Decimal, as: D
@@ -107,7 +107,7 @@ defmodule Ultraviolet.Color.Lab do
     places is desired; if no rounding is desired, pass `false`. Default: `0`
   """
   @spec to_rgb(t()) :: {:ok, Color.t()}
-  @spec to_rgb(t(), [...]) :: {:ok, Color.t()}
+  @spec to_rgb(t(), list()) :: {:ok, Color.t()}
   def to_rgb(%Lab{} = lab, options \\ []) when is_list(options) do
     reference = Keyword.get(options, :reference, :d65)
     round = Keyword.get(options, :round, 0)
@@ -137,7 +137,7 @@ defmodule Ultraviolet.Color.Lab do
       places is desired; if no rounding is desired, pass `false`. Default: `2`
   """
   @spec from_rgb(Color.t()) :: {:ok, t()}
-  @spec from_rgb(Color.t(), [...]) :: {:ok, t()}
+  @spec from_rgb(Color.t(), list()) :: {:ok, t()}
   def from_rgb(%Color{} = color, options \\ []) when is_list(options) do
     reference = Keyword.get(options, :reference, :d65)
     round = Keyword.get(options, :round, 2)

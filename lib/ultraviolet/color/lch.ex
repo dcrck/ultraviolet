@@ -7,7 +7,7 @@ defmodule Ultraviolet.Color.LCH do
   @typedoc """
   Defines the channels in a LCH color.
   """
-  @type t :: %{l: number(), c: number(), h: number(), a: number()}
+  @type t :: %__MODULE__{l: number(), c: number(), h: number(), a: number()}
 
   alias Ultraviolet.Color
   alias Ultraviolet.Color.Lab
@@ -78,12 +78,10 @@ defmodule Ultraviolet.Color.LCH do
 
   """
   @spec to_rgb(t()) :: {:ok, Color.t()}
-  @spec to_rgb(t(), [...]) :: {:ok, Color.t()}
+  @spec to_rgb(t(), list()) :: {:ok, Color.t()}
   def to_rgb(%LCH{} = lch, options \\ []) when is_list(options) do
-    case lch_to_lab(lch) do
-      {:ok, lab} -> Lab.to_rgb(lab, options)
-      error -> error
-    end
+    {:ok, lab} = lch_to_lab(lch)
+    Lab.to_rgb(lab, options)
   end
 
   @doc """
@@ -97,12 +95,10 @@ defmodule Ultraviolet.Color.LCH do
 
   """
   @spec from_rgb(Color.t()) :: {:ok, t()}
-  @spec from_rgb(Color.t(), [...]) :: {:ok, t()}
+  @spec from_rgb(Color.t(), list()) :: {:ok, t()}
   def from_rgb(%Color{} = color, options \\ []) when is_list(options) do
-    case Lab.from_rgb(color, Keyword.merge(options, round: false)) do
-      {:ok, lab} -> lab_to_lch(lab, options)
-      error -> error
-    end
+    {:ok, lab} = Lab.from_rgb(color, Keyword.merge(options, round: false))
+    lab_to_lch(lab, options)
   end
 
   # degrees to radians

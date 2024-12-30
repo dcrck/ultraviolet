@@ -10,7 +10,7 @@ defmodule Ultraviolet.Color.OKLab do
   @typedoc """
   Defines the channels in an OKLab color.
   """
-  @type t :: %{l_: number(), a_: number(), b_: number(), a: number()}
+  @type t :: %__MODULE__{l_: number(), a_: number(), b_: number(), a: number()}
 
   alias Decimal, as: D
 
@@ -142,7 +142,7 @@ defmodule Ultraviolet.Color.OKLab do
       places is desired; if no rounding is desired, pass `false`. Default: `0`
   """
   @spec to_rgb(t()) :: {:ok, Color.t()}
-  @spec to_rgb(t(), [...]) :: {:ok, Color.t()}
+  @spec to_rgb(t(), list()) :: {:ok, Color.t()}
   def to_rgb(%OKLab{} = oklab, options \\ []) when is_list(options) do
     round = Keyword.get(options, :round, 0)
 
@@ -152,18 +152,12 @@ defmodule Ultraviolet.Color.OKLab do
     |> Enum.map(&D.mult(D.mult(&1, &1), &1))
     |> M3x3.mult(M3x3.t(@lms2xyz))
     |> XYZ.new()
-    |> case do
-      {:ok, xyz} ->
-        xyz
-        |> XYZ.to_rgb()
-        |> Enum.map(&(&1 * 255))
-        |> Enum.map(&clamp_to_byte/1)
-        |> Enum.map(&maybe_round(&1, round))
-        |> then(&Color.new(&1 ++ [oklab.a]))
-
-      other ->
-        other
-    end
+    |> then(fn {:ok, xyz} -> xyz end)
+    |> XYZ.to_rgb()
+    |> Enum.map(&(&1 * 255))
+    |> Enum.map(&clamp_to_byte/1)
+    |> Enum.map(&maybe_round(&1, round))
+    |> then(&Color.new(&1 ++ [oklab.a]))
   end
 
   @doc """
@@ -175,7 +169,7 @@ defmodule Ultraviolet.Color.OKLab do
       places is desired; if no rounding is desired, pass `false`. Default: `2`
   """
   @spec from_rgb(Color.t()) :: {:ok, t()}
-  @spec from_rgb(Color.t(), [...]) :: {:ok, t()}
+  @spec from_rgb(Color.t(), list()) :: {:ok, t()}
   def from_rgb(%Color{} = color, options \\ []) when is_list(options) do
     round = Keyword.get(options, :round, 2)
     {:ok, xyz} = XYZ.from_rgb(color)

@@ -7,7 +7,7 @@ defmodule Ultraviolet.Color.HSL do
   @typedoc """
   Defines the channels in an HSL color.
   """
-  @type t :: %{h: number(), s: number(), l: number(), a: number()}
+  @type t :: %__MODULE__{h: number(), s: number(), l: number(), a: number()}
 
   alias Ultraviolet.Color
   alias __MODULE__
@@ -87,7 +87,7 @@ defmodule Ultraviolet.Color.HSL do
   @spec to_rgb(t()) :: {:ok, Color.t()}
   def to_rgb(%HSL{} = hsl), do: to_rgb(hsl, [])
 
-  @spec to_rgb(t(), [...]) :: {:ok, Color.t()}
+  @spec to_rgb(t(), list()) :: {:ok, Color.t()}
   def to_rgb(%HSL{s: s} = hsl, opts) when s == 0 and is_list(opts) do
     round = Keyword.get(opts, :round, 0)
 
@@ -135,7 +135,7 @@ defmodule Ultraviolet.Color.HSL do
   conversion taken from https://wikipedia.org/wiki/HSL_color_space
   """
   @spec from_rgb(Color.t()) :: {:ok, t()}
-  @spec from_rgb(Color.t(), [...]) :: {:ok, t()}
+  @spec from_rgb(Color.t(), list()) :: {:ok, t()}
   def from_rgb(%Color{r: r, g: g, b: b, a: a}, options \\ []) when is_list(options) do
     normalized = [r / 255, g / 255, b / 255]
     v = Enum.max(normalized)

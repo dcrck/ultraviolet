@@ -18,7 +18,7 @@ defmodule Ultraviolet.Color.Temperature do
   The effective temperature range goes from 0 to about 30,000K.
   """
   @spec to_rgb(number()) :: {:ok, Color.t()} | {:error, term()}
-  @spec to_rgb(number(), [...]) :: {:ok, Color.t()} | {:error, term()}
+  @spec to_rgb(number(), list()) :: {:ok, Color.t()} | {:error, term()}
   def to_rgb(kelvin, options \\ [])
       when is_number(kelvin) and kelvin >= 0 and kelvin <= 30_000 and is_list(options) do
     round = Keyword.get(options, :round, 0)
@@ -33,7 +33,7 @@ defmodule Ultraviolet.Color.Temperature do
   Converts a color into an approximate temperature.
   """
   @spec from_rgb(Color.t()) :: number()
-  @spec from_rgb(Color.t(), [...]) :: number()
+  @spec from_rgb(Color.t(), list()) :: number()
   def from_rgb(%Color{r: r, b: b}, options \\ []) when is_list(options) do
     maybe_round(
       find_temp(b / r, 1000, 40_000, 0.4, 0),

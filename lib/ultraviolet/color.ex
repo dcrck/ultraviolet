@@ -50,7 +50,7 @@ defmodule Ultraviolet.Color do
   This is the core Ultraviolet structure. See `Ultraviolet` for examples
   of how it can be used.
   """
-  @type t :: %{r: number(), g: number(), b: number(), a: number()}
+  @type t :: %__MODULE__{r: number(), g: number(), b: number(), a: number()}
 
   @typedoc """
   The available color spaces for transformation, interpolation, and scales.
@@ -79,8 +79,7 @@ defmodule Ultraviolet.Color do
 
   See `Ultraviolet.new/1` for more details.
   """
-  @spec new(String.t() | integer() | [...] | map() | t()) ::
-          {:ok, t()} | {:error, term()}
+  @spec new(input()) :: {:ok, t()} | {:error, term()}
   for line <- File.stream!(named_colors_path, [], :line) do
     [name, hex] = line |> String.split(" ") |> Enum.map(&String.trim/1)
 
@@ -185,7 +184,7 @@ defmodule Ultraviolet.Color do
 
   See `Ultraviolet.new/2` for more details.
   """
-  @spec new(channels(), [...]) :: {:ok, t()} | {:error, term()}
+  @spec new(channels(), list()) :: {:ok, t()} | {:error, term()}
   def new(channels, options) when is_list(options) do
     {space, options} = Keyword.pop(options, :space, :rgb)
     new_in_space(channels, space, options)
@@ -292,7 +291,7 @@ defmodule Ultraviolet.Color do
       {:ok, %Ultraviolet.Color.OKLCH{l: 0.8, c: 0.1, h: 132.5}}
   """
   @spec into(t(), space()) :: {:ok, space_t()} | {:error, term()}
-  @spec into(t(), space(), [...]) :: {:ok, space_t()} | {:error, term()}
+  @spec into(t(), space(), list()) :: {:ok, space_t()} | {:error, term()}
   def into(color, space, options \\ [])
 
   def into(%Color{} = color, rgb, _options) when rgb in [:rgb, :lrgb] do
@@ -457,7 +456,7 @@ defmodule Ultraviolet.Color do
       "#80355a"
   """
   @spec shade!(t()) :: t()
-  @spec shade!(t(), [...]) :: t()
+  @spec shade!(t(), list()) :: t()
   def shade!(color, options \\ []) when is_list(options) do
     color
     |> mix(%Color{r: 0, g: 0, b: 0}, options)
@@ -479,7 +478,7 @@ defmodule Ultraviolet.Color do
       "#ffe3ee"
   """
   @spec tint!(t()) :: t()
-  @spec tint!(t(), [...]) :: t()
+  @spec tint!(t(), list()) :: t()
   def tint!(color, options \\ []) when is_list(options) do
     color
     |> mix(%Color{r: 255, g: 255, b: 255}, options)
@@ -492,7 +491,7 @@ defmodule Ultraviolet.Color do
   See `Ultraviolet.mix/4` for documentation and examples.
   """
   @spec mix(t(), t()) :: {:ok, t()} | {:error, term()}
-  @spec mix(t(), t(), [...]) :: {:ok, t()} | {:error, term()}
+  @spec mix(t(), t(), list()) :: {:ok, t()} | {:error, term()}
   def mix(color, target, options \\ []) when is_list(options) do
     case Keyword.pop(options, :ratio, 0.5) do
       {w, _options} when not is_unit_interval(w) ->
@@ -510,7 +509,7 @@ defmodule Ultraviolet.Color do
   See `Ultraviolet.average/3` for documentation and examples.
   """
   @spec average(t(), [t()]) :: {:ok, t()} | {:error, term()}
-  @spec average(t(), [t()], [...]) :: {:ok, t()} | {:error, term()}
+  @spec average(t(), [t()], list()) :: {:ok, t()} | {:error, term()}
   def average(color, targets, options \\ []) when is_list(options) do
     options
     |> Enum.into(%{space: :lrgb, weights: nil, longer?: false})
