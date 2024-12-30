@@ -51,7 +51,7 @@ You can install `ultraviolet` by adding it to your list of dependencies in
 ```elixir
 def deps do
   [
-    {:ultraviolet, "~> 0.1.0"}
+    {:ultraviolet, "~> 0.1"}
   ]
 end
 ```
