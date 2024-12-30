@@ -91,38 +91,36 @@ defmodule Ultraviolet.Color do
   # normal hexadecimal
   def new(<<r::binary-size(2), g::binary-size(2), b::binary-size(2)>>) do
     case parse_hex_list(r: r, g: g, b: b) do
-      {:error, _} = error -> error
-      valid_list -> {:ok, struct(@me, valid_list)}
+      {:ok, valid_list} -> {:ok, struct(@me, valid_list)}
+      error -> error
     end
   end
 
   # hexadecimal with alpha
   def new(<<r::binary-size(2), g::binary-size(2), b::binary-size(2), a::binary-size(2)>>) do
     case parse_hex_list(r: r, g: g, b: b, a: a) do
-      {:error, _} = error ->
-        error
-
-      valid_list ->
+      {:ok, valid_list} ->
         {:ok, struct(@me, Keyword.update!(valid_list, :a, &(&1 / 255)))}
+      error ->
+        error
     end
   end
 
   # short hexadecimal
   def new(<<r::binary-size(1), g::binary-size(1), b::binary-size(1)>>) do
     case parse_hex_list(r: r <> r, g: g <> g, b: b <> b) do
-      {:error, _} = error -> error
-      valid_list -> {:ok, struct(@me, valid_list)}
+      {:ok, valid_list} -> {:ok, struct(@me, valid_list)}
+      error -> error
     end
   end
 
   # short hexadecimal with alpha
   def new(<<r::binary-size(1), g::binary-size(1), b::binary-size(1), a::binary-size(1)>>) do
     case parse_hex_list(r: r <> r, g: g <> g, b: b <> b, a: a <> a) do
-      {:error, _} = error ->
-        error
-
-      valid_list ->
+      {:ok, valid_list} ->
         {:ok, struct(@me, Keyword.update!(valid_list, :a, &(&1 / 255)))}
+      error ->
+        error
     end
   end
 
@@ -177,7 +175,8 @@ defmodule Ultraviolet.Color do
     new(Enum.into(channels, %{}))
   end
 
-  def new(_), do: {:error, :invalid}
+  # all other cases: throw an error
+  def new(_other), do: {:error, :invalid}
 
   @doc """
   Creates a new `Color` from the given `channels` and `options`.
@@ -191,10 +190,10 @@ defmodule Ultraviolet.Color do
   end
 
   defp parse_hex_list(arg_list) when is_list(arg_list) do
-    Enum.reduce_while(arg_list, [], fn {key, hex}, acc ->
+    Enum.reduce_while(arg_list, {:ok, []}, fn {key, hex}, {:ok, acc} ->
       case Integer.parse(hex, 16) do
         {value, ""} when is_byte(value) ->
-          {:cont, [{key, value} | acc]}
+          {:cont, {:ok, [{key, value} | acc]}}
 
         :error ->
           {:halt, {:error, "#{key} value must be a hex value between 0 and ff, got: #{hex}"}}
