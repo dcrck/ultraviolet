@@ -489,7 +489,7 @@ defmodule Ultraviolet.Color do
   @doc """
   Mixes two colors. The mix `weight` is a value between 0 and 1.
 
-  See `Ultraviolet.mix/4` for documentation and examples.
+  See `Ultraviolet.mix/3` for documentation and examples.
   """
   @spec mix(t(), t()) :: {:ok, t()} | {:error, term()}
   @spec mix(t(), t(), list()) :: {:ok, t()} | {:error, term()}
@@ -507,7 +507,7 @@ defmodule Ultraviolet.Color do
   Mixes several colors. If `weights` are given, a weighted average is
   calculated; the number of `weights` must equal the number of colors.
 
-  See `Ultraviolet.average/3` for documentation and examples.
+  See `Ultraviolet.average/2` for documentation and examples.
   """
   @spec average(t(), [t()]) :: {:ok, t()} | {:error, term()}
   @spec average(t(), [t()], list()) :: {:ok, t()} | {:error, term()}
