@@ -101,6 +101,7 @@ defmodule Ultraviolet.Color do
     case parse_hex_list(r: r, g: g, b: b, a: a) do
       {:ok, valid_list} ->
         {:ok, struct(@me, Keyword.update!(valid_list, :a, &(&1 / 255)))}
+
       error ->
         error
     end
@@ -119,6 +120,7 @@ defmodule Ultraviolet.Color do
     case parse_hex_list(r: r <> r, g: g <> g, b: b <> b, a: a <> a) do
       {:ok, valid_list} ->
         {:ok, struct(@me, Keyword.update!(valid_list, :a, &(&1 / 255)))}
+
       error ->
         error
     end
