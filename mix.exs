@@ -34,9 +34,9 @@ defmodule Ultraviolet.MixProject do
     [
       {:ex_doc, "~> 0.34", only: :dev, runtime: false},
       # required for floating point math in LAB / LCH space
-      {:decimal, "~> 2.0"},
+      {:decimal, "~> 3.1"},
       # only required to parse colorbrewer.json file
-      {:jason, "~> 1.4", optional: true, runtime: false},
+      {:jason, "~> 1.4.5", optional: true, runtime: false},
       # test coverage
       {:excoveralls, "~> 0.18", only: :test},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false}
